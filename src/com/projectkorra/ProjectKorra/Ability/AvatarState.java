@@ -11,13 +11,13 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 
 import com.projectkorra.ProjectKorra.Flight;
-import com.projectkorra.ProjectKorra.Methods;
+import com.projectkorra.ProjectKorra.GeneralMethods;
 import com.projectkorra.ProjectKorra.ProjectKorra;
 
 public class AvatarState {
 
 	public static ConcurrentHashMap<Player, AvatarState> instances = new ConcurrentHashMap<Player, AvatarState>();
-	public static Map<String, Long> cooldowns = new HashMap<String, Long>();
+	//public static Map<String, Long> cooldowns = new HashMap<String, Long>();
 	public static Map<String, Long> startTimes = new HashMap<String, Long>();
 
 	public static FileConfiguration config = ProjectKorra.plugin.getConfig();
@@ -44,19 +44,20 @@ public class AvatarState {
 			instances.remove(player);
 			return;
 		}
-		if (cooldowns.containsKey(player.getName())) {
-			if (cooldowns.get(player.getName()) + cooldown >= System.currentTimeMillis()) {
-				return;
-			} else {
-				cooldowns.remove(player.getName());
-			}
-		} 
-		new Flight(player);
-		Methods.playAvatarSound(player.getLocation());
-		instances.put(player, this);
-		if (cooldown != 0) {
-			cooldowns.put(player.getName(), System.currentTimeMillis());
+		//if (cooldowns.containsKey(player.getName())) {
+			//if (cooldowns.get(player.getName()) + cooldown >= System.currentTimeMillis()) {
+				//return;
+			//} else {
+				//cooldowns.remove(player.getName());
+			//}
+		//}
+		if(GeneralMethods.getBendingPlayer(player.getName()).isOnCooldown("AvatarState")) {
+			return;
 		}
+		new Flight(player);
+		GeneralMethods.playAvatarSound(player.getLocation());
+		instances.put(player, this);
+		GeneralMethods.getBendingPlayer(player.getName()).addCooldown("AvatarState", cooldown);
 		if (duration != 0) {
 			startTimes.put(player.getName(), System.currentTimeMillis());
 		}
@@ -76,10 +77,10 @@ public class AvatarState {
 		if (player.isDead() || !player.isOnline()) {
 			instances.remove(player);
 		}
-		if (!Methods.canBend(player.getName(), StockAbilities.AvatarState.name())) {
+		if (!GeneralMethods.canBend(player.getName(), StockAbilities.AvatarState.name())) {
 			instances.remove(player);
-			if (cooldowns.containsKey(player.getName())) {
-				cooldowns.remove(player.getName());
+			if(GeneralMethods.getBendingPlayer(player.getName()).isOnCooldown("AvatarState")) {
+				GeneralMethods.getBendingPlayer(player.getName()).removeCooldown("AvatarState");
 			}
 			return false;
 		}

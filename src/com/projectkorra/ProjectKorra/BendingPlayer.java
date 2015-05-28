@@ -38,6 +38,7 @@ public class BendingPlayer {
 		blockedChi = false;
 
 		players.put(player, this);
+		PKListener.login(this);
 	}
 
 	public boolean isOnCooldown(String ability) {
@@ -47,13 +48,15 @@ public class BendingPlayer {
 	public void addCooldown(String ability, long cooldown) {
 		PlayerCooldownChangeEvent event = new PlayerCooldownChangeEvent(Bukkit.getPlayer(uuid), ability, Result.ADDED);
 		Bukkit.getServer().getPluginManager().callEvent(event);
-		this.cooldowns.put(ability, cooldown + System.currentTimeMillis());
+		if(!event.isCancelled())
+			this.cooldowns.put(ability, cooldown + System.currentTimeMillis());
 	}
 
 	public void removeCooldown(String ability) {
 		PlayerCooldownChangeEvent event = new PlayerCooldownChangeEvent(Bukkit.getPlayer(uuid), ability, Result.REMOVED);
 		Bukkit.getServer().getPluginManager().callEvent(event);
-		this.cooldowns.remove(ability);
+		if(!event.isCancelled())
+			this.cooldowns.remove(ability);
 	}
 
 	public UUID getUUID() {

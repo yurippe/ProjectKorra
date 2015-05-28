@@ -17,6 +17,7 @@ public class TempBlock {
 	byte newdata;
 	BlockState state;
 
+	@SuppressWarnings("deprecation")
 	public TempBlock(Block block, Material newtype, byte newdata) {
 		this.block = block;
 		this.newdata = newdata;
@@ -48,19 +49,20 @@ public class TempBlock {
 		instances.remove(block);
 	}
 
+	@SuppressWarnings("deprecation")
 	public static void revertBlock(Block block, Material defaulttype) {
 		if (instances.containsKey(block)) {
 			instances.get(block).revertBlock();
 		} else {
 			if ((defaulttype == Material.LAVA
 					|| defaulttype == Material.STATIONARY_LAVA)
-					&& Methods.isAdjacentToThreeOrMoreSources(block)) {
+					&& GeneralMethods.isAdjacentToThreeOrMoreSources(block)) {
 				block.setType(Material.LAVA);
 				block.setData((byte) 0x0);
 			}
 			else if ((defaulttype == Material.WATER
 					|| defaulttype == Material.STATIONARY_WATER )
-					&& Methods.isAdjacentToThreeOrMoreSources(block)) {
+					&& GeneralMethods.isAdjacentToThreeOrMoreSources(block)) {
 				block.setType(Material.WATER);
 				block.setData((byte) 0x0);
 			} else {
@@ -105,6 +107,14 @@ public class TempBlock {
 	public Block getBlock() {
 		return block;
 	}
+	
+	public BlockState getState() {
+		return state;
+	}
+	
+	public void setState(BlockState newstate) {
+		state = newstate;
+	}
 
 	public static void removeAll() {
 		for (Block block : instances.keySet()) {
@@ -117,6 +127,7 @@ public class TempBlock {
 		setType(material, newdata);
 	}
 
+	@SuppressWarnings("deprecation")
 	public void setType(Material material, byte data) {
 		newtype = material;
 		newdata = data;

@@ -1,6 +1,7 @@
 package com.projectkorra.ProjectKorra.earthbending;
 
 import org.bukkit.Bukkit;
+
 import com.projectkorra.ProjectKorra.ProjectKorra;
 import com.projectkorra.ProjectKorra.RevertChecker;
 
@@ -27,5 +28,6 @@ public class EarthbendingManager implements Runnable {
 		MetalClips.progressAll();
 		LavaSurge.progressAll();
 		LavaFlow.progressAll();
+		EarthSmash.progressAll();
 	}
 }

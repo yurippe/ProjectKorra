@@ -1,6 +1,7 @@
 package com.projectkorra.ProjectKorra.earthbending;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.bukkit.Effect;
@@ -11,7 +12,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
 
 import com.projectkorra.ProjectKorra.BendingPlayer;
-import com.projectkorra.ProjectKorra.Methods;
+import com.projectkorra.ProjectKorra.GeneralMethods;
 import com.projectkorra.ProjectKorra.ProjectKorra;
 import com.projectkorra.ProjectKorra.TempBlock;
 import com.projectkorra.ProjectKorra.Ability.AvatarState;
@@ -24,6 +25,7 @@ public class LavaWall {
 	private static double range = ProjectKorra.plugin.getConfig().getDouble("Abilities.Water.Surge.Wall.Range");
 	private static final double defaultradius = ProjectKorra.plugin.getConfig().getDouble("Abilities.Water.Surge.Wall.Radius");
 	private static final long interval = 30;
+	@SuppressWarnings("unused")
 	private static final byte full = 0x0;
 	Player player;
 	private Location location = null;
@@ -53,14 +55,14 @@ public class LavaWall {
 			radius = AvatarState.getValue(radius);
 		}
 		
-		BendingPlayer bPlayer = Methods.getBendingPlayer(player.getName());
+		BendingPlayer bPlayer = GeneralMethods.getBendingPlayer(player.getName());
 		if (bPlayer.isOnCooldown("LavaSurge")) return;
 
 	}
 
 	public boolean prepare() {
 		cancelPrevious();
-		Block block = Methods.getLavaSourceBlock(player, range);
+		Block block = EarthMethods.getLavaSourceBlock(player, range);
 		if (block != null) {
 			sourceblock = block;
 			focusBlock();
@@ -92,9 +94,10 @@ public class LavaWall {
 		instances.remove(player.getEntityId());
 	}
 	
+	@SuppressWarnings("deprecation")
 	public void moveLava() {
 		if (sourceblock != null) {
-			targetdestination = player.getTargetBlock(Methods.getTransparentEarthbending(), (int) range).getLocation();
+			targetdestination = player.getTargetBlock(EarthMethods.getTransparentEarthbending(), (int) range).getLocation();
 			if (targetdestination.distance(location) <= 1) {
 				progressing = false;
 				targetdestination = null;
@@ -105,7 +108,7 @@ public class LavaWall {
 				firstdirection = getDirection(sourceblock.getLocation(), firstdestination);
 				targetdirection = getDirection(firstdestination, targetdestination);
 
-				if (!Methods.isAdjacentToThreeOrMoreSources(sourceblock)) {
+				if (!GeneralMethods.isAdjacentToThreeOrMoreSources(sourceblock)) {
 					sourceblock.setType(Material.AIR);
 				}
 				addLava(sourceblock);
@@ -143,7 +146,7 @@ public class LavaWall {
 			// instances.remove(player.getEntityId());
 			return false;
 		}
-		if (!Methods.canBend(player.getName(), "LavaSurge")) {
+		if (!GeneralMethods.canBend(player.getName(), "LavaSurge")) {
 			if (!forming)
 				breakBlock();
 			unfocusBlock();
@@ -153,17 +156,17 @@ public class LavaWall {
 			time = System.currentTimeMillis();
 			if (!forming) {
 			}
-			if (Methods.getBoundAbility(player) == null) {
+			if (GeneralMethods.getBoundAbility(player) == null) {
 				unfocusBlock();
 				return false;
 			}
 			if (!progressing
-					&& !Methods.getBoundAbility(player).equalsIgnoreCase("LavaSurge")) {
+					&& !GeneralMethods.getBoundAbility(player).equalsIgnoreCase("LavaSurge")) {
 				unfocusBlock();
 				return false;
 			}
 			if (progressing
-					&& (!player.isSneaking() || !Methods.getBoundAbility(player).equalsIgnoreCase("LavaSurge"))) {
+					&& (!player.isSneaking() || !GeneralMethods.getBoundAbility(player).equalsIgnoreCase("LavaSurge"))) {
 				breakBlock();
 				return false;
 			}
@@ -173,23 +176,23 @@ public class LavaWall {
 			}
 			if (forming) {
 				ArrayList<Block> blocks = new ArrayList<Block>();
-				Location loc = Methods.getTargetedLocation(player, (int) range,	8, 9, 79);
+				Location loc = GeneralMethods.getTargetedLocation(player, (int) range,	8, 9, 79);
 				location = loc.clone();
 				Vector dir = player.getEyeLocation().getDirection();
 				Vector vec;
 				Block block;
 				for (double i = 0; i <= radius; i += 0.5) {
 					for (double angle = 0; angle < 360; angle += 10) {
-						vec = Methods.getOrthogonalVector(dir.clone(), angle, i);
+						vec = GeneralMethods.getOrthogonalVector(dir.clone(), angle, i);
 						block = loc.clone().add(vec).getBlock();
-						if (Methods.isRegionProtectedFromBuild(player, "LavaSurge", block.getLocation()))
+						if (GeneralMethods.isRegionProtectedFromBuild(player, "LavaSurge", block.getLocation()))
 							continue;
 						if (wallblocks.containsKey(block)) {
 							blocks.add(block);
 						} else if (!blocks.contains(block)
 								&& (block.getType() == Material.AIR
 								|| block.getType() == Material.FIRE
-								|| Methods.isLavabendable(block, player))) {
+								|| EarthMethods.isLavabendable(block, player))) {
 							wallblocks.put(block, player);
 							addWallBlock(block);
 							blocks.add(block);
@@ -256,7 +259,7 @@ public class LavaWall {
 	private void removeLava(Block block) {
 		if (block != null) {
 			if (affectedblocks.containsKey(block)) {
-				if (!Methods.isAdjacentToThreeOrMoreSources(block)) {
+				if (!GeneralMethods.isAdjacentToThreeOrMoreSources(block)) {
 					TempBlock.revertBlock(block, Material.AIR);
 				}
 				affectedblocks.remove(block);
@@ -276,7 +279,7 @@ public class LavaWall {
 	}
 	
 	private void addLava(Block block) {
-		if (Methods.isRegionProtectedFromBuild(player, "LavaSurge", block.getLocation()))
+		if (GeneralMethods.isRegionProtectedFromBuild(player, "LavaSurge", block.getLocation()))
 			return;
 		if (!TempBlock.isTempBlock(block)) {
 			new TempBlock(block, Material.STATIONARY_LAVA, (byte) 8);
@@ -290,12 +293,13 @@ public class LavaWall {
 		}
 	}
 	
+	@SuppressWarnings("deprecation")
 	public static void form(Player player) {
 		if (!instances.containsKey(player.getEntityId())) {
 			new LavaWave(player);
 			return;
 		} else {
-			if (Methods.isLavabendable(player.getTargetBlock(null, (int) LavaWave.defaultrange), player)) {
+			if (EarthMethods.isLavabendable(player.getTargetBlock((HashSet<Byte>) null, (int) LavaWave.defaultrange), player)) {
 				new LavaWave(player);
 				return;
 			}

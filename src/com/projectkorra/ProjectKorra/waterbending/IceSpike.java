@@ -1,9 +1,8 @@
 package com.projectkorra.ProjectKorra.waterbending;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.bukkit.Location;
@@ -18,9 +17,10 @@ import org.bukkit.potion.PotionEffectType;
 import org.bukkit.util.Vector;
 
 import com.projectkorra.ProjectKorra.BendingPlayer;
-import com.projectkorra.ProjectKorra.Methods;
+import com.projectkorra.ProjectKorra.GeneralMethods;
 import com.projectkorra.ProjectKorra.ProjectKorra;
 import com.projectkorra.ProjectKorra.TempPotionEffect;
+import com.projectkorra.ProjectKorra.airbending.AirMethods;
 
 public class IceSpike {
 
@@ -30,10 +30,11 @@ public class IceSpike {
 	private static ConcurrentHashMap<Block, Integer> baseblocks = new ConcurrentHashMap<Block, Integer>();
 
 	public static long removeTimer = 500;
-	public static long cooldown = ProjectKorra.plugin.getConfig().getLong("Abilities.Water.IceSpike.Cooldown");
-	public static final int standardheight = ProjectKorra.plugin.getConfig().getInt("Abilities.Water.IceSpike.Height");
-	private static double range = ProjectKorra.plugin.getConfig().getDouble("Abilities.Water.IceSpike.Range");
-
+	public static long COOLDOWN = ProjectKorra.plugin.getConfig().getLong("Abilities.Water.IceSpike.Cooldown");
+	public static final int HEIGHT = ProjectKorra.plugin.getConfig().getInt("Abilities.Water.IceSpike.Height");
+	private static double RANGE = ProjectKorra.plugin.getConfig().getDouble("Abilities.Water.IceSpike.Range");
+	private static double DAMAGE = ProjectKorra.plugin.getConfig().getDouble("Abilities.Water.IceSpike.Damage");
+	
 	private static int ID = Integer.MIN_VALUE;
 	private static double speed = 25;
 	private static long interval = (long) (1000. / speed);
@@ -44,7 +45,11 @@ public class IceSpike {
 	private Block block;
 	private Player player;
 	private int progress = 0;
-	private double damage = ProjectKorra.plugin.getConfig().getDouble("Abilities.Water.IceSpike.Damage");
+	private double damage = DAMAGE;
+	private double range = RANGE;
+	private long cooldown = COOLDOWN;
+	//TODO Fix height so that it actually does something
+	//private double standardheight = HEIGHT;
 	private long time;
 	int id;
 	int height = 2;
@@ -53,15 +58,15 @@ public class IceSpike {
 	private List<LivingEntity> damaged = new ArrayList<LivingEntity>();
 
 	public IceSpike(Player player) {
-		BendingPlayer bPlayer = Methods.getBendingPlayer(player.getName());
+		BendingPlayer bPlayer = GeneralMethods.getBendingPlayer(player.getName());
 		if (bPlayer.isOnCooldown("IceSpike")) return;
 		try {
 			this.player = player;
 
 			double lowestdistance = range + 1;
 			Entity closestentity = null;
-			for (Entity entity : Methods.getEntitiesAroundPoint(player.getLocation(), range)) {
-				if (Methods.getDistanceFromLine(player.getLocation().getDirection(), player.getLocation(), entity.getLocation()) <= 2
+			for (Entity entity : GeneralMethods.getEntitiesAroundPoint(player.getLocation(), range)) {
+				if (GeneralMethods.getDistanceFromLine(player.getLocation().getDirection(), player.getLocation(), entity.getLocation()) <= 2
 						&& (entity instanceof LivingEntity)
 						&& (entity.getEntityId() != player.getEntityId())) {
 					double distance = player.getLocation().distance(entity.getLocation());
@@ -77,7 +82,7 @@ public class IceSpike {
 				this.block = temptestingblock;
 				// }
 			} else {
-				this.block = player.getTargetBlock(null, (int) range);
+				this.block = player.getTargetBlock((HashSet<Material>) null, (int) range);
 			}
 			origin = block.getLocation();
 			location = origin.clone();
@@ -205,9 +210,9 @@ public class IceSpike {
 		progress++;
 		Block affectedblock = location.clone().add(direction).getBlock();
 		location = location.add(direction);
-		if (Methods.isRegionProtectedFromBuild(player, "IceSpike", location))
+		if (GeneralMethods.isRegionProtectedFromBuild(player, "IceSpike", location))
 			return false;
-		for (Entity en : Methods.getEntitiesAroundPoint(location, 1.4)) {
+		for (Entity en : GeneralMethods.getEntitiesAroundPoint(location, 1.4)) {
 			if (en instanceof LivingEntity && en != player && !damaged.contains(((LivingEntity) en))) {
 				LivingEntity le = (LivingEntity) en;
 				affect(le);
@@ -218,7 +223,7 @@ public class IceSpike {
 			}
 		}
 		affectedblock.setType(Material.ICE);
-		Methods.playIcebendingSound(block.getLocation());	
+		WaterMethods.playIcebendingSound(block.getLocation());	
 		loadAffectedBlocks();
 
 		if (location.distance(origin) >= height) {
@@ -235,7 +240,7 @@ public class IceSpike {
 		long slowCooldown = IceSpike2.slowCooldown;
 		int mod = 2;
 		if (entity instanceof Player) {
-			BendingPlayer bPlayer = Methods.getBendingPlayer(player.getName());
+			BendingPlayer bPlayer = GeneralMethods.getBendingPlayer(player.getName());
 			if (bPlayer.canBeSlowed()) {
 				PotionEffect effect = new PotionEffect(PotionEffectType.SLOW, 70, mod);
 				new TempPotionEffect(entity, effect);
@@ -245,7 +250,7 @@ public class IceSpike {
 			PotionEffect effect = new PotionEffect(PotionEffectType.SLOW, 70, mod);
 			new TempPotionEffect(entity, effect);
 		}
-		Methods.breakBreathbendingHold(entity);
+		AirMethods.breakBreathbendingHold(entity);
 
 	}
 
@@ -276,6 +281,36 @@ public class IceSpike {
 		if (blockIsBase(location.getBlock()))
 			return false;
 		return true;
+	}
+
+	public Player getPlayer() {
+		return player;
+	}
+
+	public double getDamage() {
+		return damage;
+	}
+
+	public void setDamage(double damage) {
+		this.damage = damage;
+	}
+
+	public double getRange() {
+		return range;
+	}
+
+	public void setRange(double range) {
+		this.range = range;
+	}
+
+	public long getCooldown() {
+		return cooldown;
+	}
+
+	public void setCooldown(long cooldown) {
+		this.cooldown = cooldown;
+		if(player != null)
+			GeneralMethods.getBendingPlayer(player.getName()).addCooldown("IceSpike", cooldown);
 	}
 
 	public static String getDescription() {

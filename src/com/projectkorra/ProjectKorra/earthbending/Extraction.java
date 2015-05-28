@@ -1,5 +1,6 @@
 package com.projectkorra.ProjectKorra.earthbending;
 
+import java.util.HashSet;
 import java.util.Random;
 
 import org.bukkit.Material;
@@ -8,7 +9,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
 import com.projectkorra.ProjectKorra.BendingPlayer;
-import com.projectkorra.ProjectKorra.Methods;
+import com.projectkorra.ProjectKorra.GeneralMethods;
 import com.projectkorra.ProjectKorra.ProjectKorra;
 
 public class Extraction {
@@ -18,32 +19,48 @@ public class Extraction {
 	private static int triplechance = ProjectKorra.plugin.getConfig().getInt("Abilities.Earth.Extraction.TripleLootChance");
 
 	public Extraction(Player player) {
-		BendingPlayer bPlayer = Methods.getBendingPlayer(player.getName());
+		BendingPlayer bPlayer = GeneralMethods.getBendingPlayer(player.getName());
 		if (bPlayer.isOnCooldown("Extraction")) return;
 
-		Block block = player.getTargetBlock(null, 5);
+		Block block = player.getTargetBlock((HashSet<Material>) null, 5);
 		if (block == null) {
 			return;
 		}
-		if (!Methods.isRegionProtectedFromBuild(player, "Extraction", block.getLocation())) {
-			if (Methods.canMetalbend(player) && Methods.canBend(player.getName(), "Extraction")) {
+		if (!GeneralMethods.isRegionProtectedFromBuild(player, "Extraction", block.getLocation())) {
+			if (EarthMethods.canMetalbend(player) && GeneralMethods.canBend(player.getName(), "Extraction")) {
+				Material type = null;
+				
 				switch(block.getType()) {
 				case IRON_ORE:
 					block.setType(Material.STONE);
 					player.getWorld().dropItem(player.getLocation(), new ItemStack(Material.IRON_INGOT, getAmount()));
+					type = Material.STONE;
 					break;
 				case GOLD_ORE:
 					block.setType(Material.STONE);
 					player.getWorld().dropItem(player.getLocation(), new ItemStack(Material.GOLD_INGOT, getAmount()));
+					type = Material.STONE;
 					break;
 				case QUARTZ_ORE:
 					block.setType(Material.NETHERRACK);
 					player.getWorld().dropItem(player.getLocation(), new ItemStack(Material.QUARTZ, getAmount()));
+					type = Material.NETHERRACK;
 					break;
 				default:
 					break; // shouldn't happen.
 				}
-				Methods.playMetalbendingSound(block.getLocation());
+				
+				if(type != null) {
+					/* Update the block from Methods.movedearth to Stone otherwise
+					 * players can use RaiseEarth > Extraction > Collapse
+					 * to dupe the material from the block.
+					 * */
+					if(EarthMethods.movedearth.containsKey(block)) {
+						EarthMethods.movedearth.remove(block);
+					}
+				}
+				
+				EarthMethods.playMetalbendingSound(block.getLocation());
 				bPlayer.addCooldown("Extraction", cooldown);
 			}
 		}

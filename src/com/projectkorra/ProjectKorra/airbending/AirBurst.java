@@ -1,8 +1,9 @@
 package com.projectkorra.ProjectKorra.airbending;
 
-import java.util.ArrayList;
-import java.util.concurrent.ConcurrentHashMap;
-
+import com.projectkorra.ProjectKorra.Ability.AvatarState;
+import com.projectkorra.ProjectKorra.BendingPlayer;
+import com.projectkorra.ProjectKorra.GeneralMethods;
+import com.projectkorra.ProjectKorra.ProjectKorra;
 import org.bukkit.Location;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Entity;
@@ -10,10 +11,8 @@ import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
 
-import com.projectkorra.ProjectKorra.BendingPlayer;
-import com.projectkorra.ProjectKorra.Methods;
-import com.projectkorra.ProjectKorra.ProjectKorra;
-import com.projectkorra.ProjectKorra.Ability.AvatarState;
+import java.util.ArrayList;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class AirBurst {
 
@@ -32,11 +31,11 @@ public class AirBurst {
 	private long starttime;
 	private long chargetime = config.getLong("Abilities.Air.AirBurst.ChargeTime");
 	private boolean charged = false;
-	private ArrayList<AirBlast> blasts = new ArrayList<AirBlast>();
+	public ArrayList<AirBlast> blasts = new ArrayList<AirBlast>();
 	private ArrayList<Entity> affectedentities = new ArrayList<Entity>();
 
 	public AirBurst(Player player) {
-		BendingPlayer bPlayer = Methods.getBendingPlayer(player.getName());
+		BendingPlayer bPlayer = GeneralMethods.getBendingPlayer(player.getName());
 		if (bPlayer.isOnCooldown("AirBurst")) return;
 		if (instances.containsKey(player))
 			return;
@@ -111,19 +110,19 @@ public class AirBurst {
 	}
 
 	public static void fallBurst(Player player) {
-		if (!Methods.canBend(player.getName(), "AirBurst")) {
+		if (!GeneralMethods.canBend(player.getName(), "AirBurst")) {
 			return;
 		}
 		if (player.getFallDistance() < threshold) {
 			return;
 		}
-		if (Methods.getBoundAbility(player) == null) {
+		if (GeneralMethods.getBoundAbility(player) == null) {
 			return;
 		}
 		if (instances.containsKey(player)) {
 			return;
 		}
-		if (!Methods.getBoundAbility(player).equalsIgnoreCase("AirBurst")) {
+		if (!GeneralMethods.getBoundAbility(player).equalsIgnoreCase("AirBurst")) {
 			return;
 		}
 
@@ -155,16 +154,16 @@ public class AirBurst {
 	}
 
 	private void progress() {
-		if (!Methods.canBend(player.getName(), "AirBurst")) {
+		if (!GeneralMethods.canBend(player.getName(), "AirBurst")) {
 			instances.remove(player);
 			return;
 		}
-		if (Methods.getBoundAbility(player) == null) {
+		if (GeneralMethods.getBoundAbility(player) == null) {
 			instances.remove(player);
 			return;
 		}
 		
-		if (!Methods.getBoundAbility(player).equalsIgnoreCase("AirBurst")) {
+		if (!GeneralMethods.getBoundAbility(player).equalsIgnoreCase("AirBurst")) {
 			instances.remove(player);
 			return;
 		}
@@ -182,7 +181,7 @@ public class AirBurst {
 		} else if (charged) {
 			Location location = player.getEyeLocation();
 			// location = location.add(location.getDirection().normalize());
-			Methods.playAirbendingParticles(location, 10);
+			AirMethods.playAirbendingParticles(location, 10);
 //			location.getWorld().playEffect(
 //					location,
 //					Effect.SMOKE,

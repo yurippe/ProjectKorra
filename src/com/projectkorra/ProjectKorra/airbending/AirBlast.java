@@ -1,24 +1,24 @@
 package com.projectkorra.ProjectKorra.airbending;
 
-import java.util.ArrayList;
-import java.util.concurrent.ConcurrentHashMap;
+import com.projectkorra.ProjectKorra.Ability.AvatarState;
+import com.projectkorra.ProjectKorra.*;
+import com.projectkorra.ProjectKorra.Objects.HorizontalVelocityTracker;
 
 import org.bukkit.Effect;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.Sound;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
+import org.bukkit.material.Button;
 import org.bukkit.util.Vector;
 
-import com.projectkorra.ProjectKorra.BendingPlayer;
-import com.projectkorra.ProjectKorra.Commands;
-import com.projectkorra.ProjectKorra.Flight;
-import com.projectkorra.ProjectKorra.Methods;
-import com.projectkorra.ProjectKorra.ProjectKorra;
-import com.projectkorra.ProjectKorra.Ability.AvatarState;
+import java.util.ArrayList;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class AirBlast {
 
@@ -39,7 +39,7 @@ public class AirBlast {
 	// public static long interval = 2000;
 	public static byte full = 0x0;
 
-	private Location location;
+	public Location location;
 	private Location origin;
 	private Vector direction;
 	private Player player;
@@ -55,35 +55,29 @@ public class AirBlast {
 	private ArrayList<Block> affectedlevers = new ArrayList<Block>();
 	private ArrayList<Entity> affectedentities = new ArrayList<Entity>();
 
+	@SuppressWarnings("unused")
 	private AirBurst source = null;
 
-	// private long time;
 
 	public AirBlast(Player player) {
-		// if (timers.containsKey(player)) {
-		// if (System.currentTimeMillis() < timers.get(player) + soonesttime) {
-		// return;
-		// }
-		// }
 		
-		BendingPlayer bPlayer = Methods.getBendingPlayer(player.getName());
+		BendingPlayer bPlayer = GeneralMethods.getBendingPlayer(player.getName());
 		
 		if (bPlayer.isOnCooldown("AirBlast")) return;
 
 		if (player.getEyeLocation().getBlock().isLiquid()) {
 			return;
 		}
-		// timers.put(player, System.currentTimeMillis());
 		this.player = player;
 		if (origins.containsKey(player)) {
 			otherorigin = true;
 			origin = origins.get(player);
 			origins.remove(player);
-			Entity entity = Methods.getTargetedEntity(player, range, new ArrayList<Entity>());
+			Entity entity = GeneralMethods.getTargetedEntity(player, range, new ArrayList<Entity>());
 			if (entity != null) {
-				direction = Methods.getDirection(origin, entity.getLocation()).normalize();
+				direction = GeneralMethods.getDirection(origin, entity.getLocation()).normalize();
 			} else {
-				direction = Methods.getDirection(origin, Methods.getTargetedLocation(player, range)).normalize();
+				direction = GeneralMethods.getDirection(origin, GeneralMethods.getTargetedLocation(player, range)).normalize();
 			}
 		} else {
 			origin = player.getEyeLocation();
@@ -92,7 +86,7 @@ public class AirBlast {
 		location = origin.clone();
 		id = ID;
 		instances.put(id, this);
-		bPlayer.addCooldown("AirBlast", Methods.getGlobalCooldown());
+		bPlayer.addCooldown("AirBlast", GeneralMethods.getGlobalCooldown());
 
 		if (ID == Integer.MAX_VALUE)
 			ID = Integer.MIN_VALUE;
@@ -121,11 +115,11 @@ public class AirBlast {
 	}
 
 	public static void setOrigin(Player player) {
-		Location location = Methods.getTargetedLocation(player, originselectrange, Methods.nonOpaque);
-		if (location.getBlock().isLiquid() || Methods.isSolid(location.getBlock()))
+		Location location = GeneralMethods.getTargetedLocation(player, originselectrange, GeneralMethods.nonOpaque);
+		if (location.getBlock().isLiquid() || GeneralMethods.isSolid(location.getBlock()))
 			return;
 
-		if (Methods.isRegionProtectedFromBuild(player, "AirBlast", location))
+		if (GeneralMethods.isRegionProtectedFromBuild(player, "AirBlast", location))
 			return;
 
 		if (origins.containsKey(player)) {
@@ -135,13 +129,14 @@ public class AirBlast {
 		}
 	}
 
+	@SuppressWarnings("deprecation")
 	public boolean progress() {
 		if (player.isDead() || !player.isOnline()) {
 			instances.remove(id);
 			return false;
 		}
 
-		if (Methods.isRegionProtectedFromBuild(player, "AirBlast", location)) {
+		if (GeneralMethods.isRegionProtectedFromBuild(player, "AirBlast", location)) {
 			instances.remove(id);
 			return false;
 		}
@@ -155,10 +150,24 @@ public class AirBlast {
 			return false;
 		}
 		Block block = location.getBlock();
-		for (Block testblock : Methods.getBlocksAroundPoint(location, affectingradius)) {
+		for (Block testblock : GeneralMethods.getBlocksAroundPoint(location, affectingradius)) {
 			if (testblock.getType() == Material.FIRE) {
 				testblock.setType(Material.AIR);
 				testblock.getWorld().playEffect(testblock.getLocation(), Effect.EXTINGUISH, 0);
+			}
+
+			if (block.getType() == Material.WOODEN_DOOR) {
+				if (block.getData() >= 8) {
+					block = block.getRelative(BlockFace.DOWN);
+				}
+				
+				if (block.getData() < 4) {
+					block.setData((byte) (block.getData() + 4));
+					block.getWorld().playSound(block.getLocation(), Sound.DOOR_CLOSE, 10, 1);
+				} else {
+					block.setData((byte) (block.getData() - 4));
+					block.getWorld().playSound(block.getLocation(), Sound.DOOR_OPEN, 10, 1);
+				}
 			}
 			if (((block.getType() == Material.LEVER) || (block.getType() == Material.STONE_BUTTON))
 					&& !affectedlevers.contains(block)) {
@@ -179,7 +188,7 @@ public class AirBlast {
 				affectedlevers.add(block);
 			}
 		}
-		if ((Methods.isSolid(block) || block.isLiquid()) && !affectedlevers.contains(block)) {
+		if ((GeneralMethods.isSolid(block) || block.isLiquid()) && !affectedlevers.contains(block)) {
 			if (block.getType() == Material.LAVA || block.getType() == Material.STATIONARY_LAVA) {
 				if (block.getData() == full) {
 					block.setType(Material.OBSIDIAN);
@@ -190,13 +199,20 @@ public class AirBlast {
 			instances.remove(id);
 			return false;
 		}
-
-		if (location.distance(origin) > range) {
+		
+		/*
+		 *	If a player presses shift and AirBlasts straight down then
+		 *	the AirBlast's location gets messed up and reading the distance
+		 *	returns Double.NaN. If we don't remove this instance then
+		 *	the AirBlast will never be removed. 
+		 */
+		double dist = location.distance(origin);
+		if (Double.isNaN(dist) || dist > range) {
 			instances.remove(id);
 			return false;
 		}
-
-		for (Entity entity : Methods.getEntitiesAroundPoint(location, affectingradius)) {
+		
+		for (Entity entity : GeneralMethods.getEntitiesAroundPoint(location, affectingradius)) {
 			affect(entity);
 		}
 
@@ -207,9 +223,9 @@ public class AirBlast {
 
 	private void advanceLocation() {
 		if (showParticles)
-			Methods.playAirbendingParticles(location, 10);
-		if (Methods.rand.nextInt(4) == 0) {
-			Methods.playAirbendingSound(location);
+			AirMethods.playAirbendingParticles(location, 10);
+		if (GeneralMethods.rand.nextInt(4) == 0) {
+			AirMethods.playAirbendingSound(location);
 		}
 		location = location.add(direction.clone().multiply(speedfactor));
 	}
@@ -237,7 +253,7 @@ public class AirBlast {
 
 			factor *= 1 - location.distance(origin) / (2 * range);
 
-			if (isUser && Methods.isSolid(player.getLocation().add(0, -.5, 0).getBlock())) {
+			if (isUser && GeneralMethods.isSolid(player.getLocation().add(0, -.5, 0).getBlock())) {
 				factor *= .5;
 			}
 
@@ -254,8 +270,12 @@ public class AirBlast {
 			if (entity instanceof Player) {
 				if (Commands.invincible.contains(((Player) entity).getName())) return;
 			}
-
-			Methods.setVelocity(entity, velocity);
+			
+			if(Double.isNaN(velocity.length()))
+				return;
+			
+			GeneralMethods.setVelocity(entity, velocity);
+			new HorizontalVelocityTracker(entity, player, 200l);
 			entity.setFallDistance(0);
 			if (!isUser && entity instanceof Player) {
 				new Flight((Player) entity, player);
@@ -263,10 +283,10 @@ public class AirBlast {
 			if (entity.getFireTicks() > 0)
 				entity.getWorld().playEffect(entity.getLocation(), Effect.EXTINGUISH, 0);
 			entity.setFireTicks(0);
-			Methods.breakBreathbendingHold(entity);
+			AirMethods.breakBreathbendingHold(entity);
 			
 			if (damage > 0 && entity instanceof LivingEntity && !entity.equals(player) && !affectedentities.contains(entity)) {
-				Methods.damageEntity(player, entity, damage);
+				GeneralMethods.damageEntity(player, entity, damage);
 				affectedentities.add(entity);
 			}
 		}
@@ -301,12 +321,12 @@ public class AirBlast {
 			return;
 		}
 
-		if (Methods.getBoundAbility(player) == null) {
+		if (GeneralMethods.getBoundAbility(player) == null) {
 			origins.remove(player);
 			return;
 		}
 		
-		if (!Methods.getBoundAbility(player).equalsIgnoreCase("AirBlast") || !Methods.canBend(player.getName(), "AirBlast")) {
+		if (!GeneralMethods.getBoundAbility(player).equalsIgnoreCase("AirBlast") || !GeneralMethods.canBend(player.getName(), "AirBlast")) {
 			origins.remove(player);
 			return;
 		}
@@ -316,7 +336,7 @@ public class AirBlast {
 			return;
 		}
 
-		Methods.playAirbendingParticles(origin, 10);
+		AirMethods.playAirbendingParticles(origin, 10);
 //		origin.getWorld().playEffect(origin, Effect.SMOKE, 4,
 //				(int) originselectrange);
 	}
@@ -326,4 +346,26 @@ public class AirBlast {
 			instances.remove(id);
 		}
 	}
+
+	public Player getPlayer() {
+		return player;
+	}
+
+	public double getRange() {
+		return range;
+	}
+
+	public void setRange(double range) {
+		this.range = range;
+	}
+
+	public double getPushfactor() {
+		return pushfactor;
+	}
+
+	public void setPushfactor(double pushfactor) {
+		this.pushfactor = pushfactor;
+	}
+	
+	
 }

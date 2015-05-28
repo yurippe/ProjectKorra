@@ -5,45 +5,48 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.bukkit.Effect;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
+import org.bukkit.block.Furnace;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
 
 import com.projectkorra.ProjectKorra.BendingPlayer;
-import com.projectkorra.ProjectKorra.Methods;
+import com.projectkorra.ProjectKorra.GeneralMethods;
 import com.projectkorra.ProjectKorra.ProjectKorra;
 import com.projectkorra.ProjectKorra.Ability.AvatarState;
+import com.projectkorra.ProjectKorra.Utilities.ParticleEffect;
+import com.projectkorra.ProjectKorra.airbending.AirMethods;
 import com.projectkorra.ProjectKorra.earthbending.EarthBlast;
 import com.projectkorra.ProjectKorra.waterbending.Plantbending;
 import com.projectkorra.ProjectKorra.waterbending.WaterManipulation;
+import com.projectkorra.ProjectKorra.waterbending.WaterMethods;
 
 public class FireBlast {
 
 	Random rand = new Random();
 
 	public static ConcurrentHashMap<Integer, FireBlast> instances = new ConcurrentHashMap<Integer, FireBlast>();
-	private static double speed = ProjectKorra.plugin.getConfig().getDouble("Abilities.Fire.FireBlast.Speed");
-	private static double pushfactor = ProjectKorra.plugin.getConfig().getDouble("Abilities.Fire.FireBlast.Push");
+	private static double SPEED = ProjectKorra.plugin.getConfig().getDouble("Abilities.Fire.FireBlast.Speed");
+	private static double PUSH_FACTOR = ProjectKorra.plugin.getConfig().getDouble("Abilities.Fire.FireBlast.Push");
 	private static double RANGE = ProjectKorra.plugin.getConfig().getDouble("Abilities.Fire.FireBlast.Range");
 	static boolean dissipate = ProjectKorra.plugin.getConfig().getBoolean("Abilities.Fire.FireBlast.Dissipate");
 	private static int DAMAGE = ProjectKorra.plugin.getConfig().getInt("Abilities.Fire.FireBlast.Damage");
 	
 	long cooldown = ProjectKorra.plugin.getConfig().getLong("Abilities.Fire.FireBlast.Cooldown");
 
-	public static double affectingradius = 2;
+	public static double AFFECTING_RADIUS = 2;
 	// public static long interval = 2000;
 	public static byte full = 0x0;
 	private static int ID = Integer.MIN_VALUE;
 	private static boolean canPowerFurnace = true;
 	static final int maxticks = 10000;
 
-	private Location location;
+	public Location location;
 	private List<Block> safe = new ArrayList<Block>();
 	private Location origin;
 	private Vector direction;
@@ -53,17 +56,20 @@ public class FireBlast {
 	private int ticks = 0;
 	private double range = RANGE;
 	private double damage = DAMAGE;
+	private double speed = SPEED;
+	private double pushfactor = PUSH_FACTOR;
+	private double affectingradius = AFFECTING_RADIUS;
 	private boolean showParticles = true;
 
 	public FireBlast(Player player) {
-		BendingPlayer bPlayer = Methods.getBendingPlayer(player.getName());
+		BendingPlayer bPlayer = GeneralMethods.getBendingPlayer(player.getName());
 
 		if (bPlayer.isOnCooldown("FireBlast")) return;
 
 		if (player.getEyeLocation().getBlock().isLiquid() || Fireball.isCharging(player)) {
 			return;
 		}
-		range = Methods.getFirebendingDayAugment(range, player.getWorld());
+		range = FireMethods.getFirebendingDayAugment(range, player.getWorld());
 		this.player = player;
 		location = player.getEyeLocation();
 		origin = player.getEyeLocation();
@@ -84,7 +90,7 @@ public class FireBlast {
 			return;
 		}
 		safe = safeblocks;
-		range = Methods.getFirebendingDayAugment(range, player.getWorld());
+		range = FireMethods.getFirebendingDayAugment(range, player.getWorld());
 		// timers.put(player, System.currentTimeMillis());
 		this.player = player;
 		this.location = location.clone();
@@ -104,7 +110,7 @@ public class FireBlast {
 			return false;
 		}
 
-		if (Methods.isRegionProtectedFromBuild(player, "Blaze", location)) {
+		if (GeneralMethods.isRegionProtectedFromBuild(player, "Blaze", location)) {
 			instances.remove(id);
 			return false;
 		}
@@ -120,9 +126,12 @@ public class FireBlast {
 
 		Block block = location.getBlock();
 
-		if (Methods.isSolid(block) || block.isLiquid()) {
+		if (GeneralMethods.isSolid(block) || block.isLiquid()) {
 			if (block.getType() == Material.FURNACE && canPowerFurnace) {
-
+				Furnace furnace = (Furnace) block.getState();
+				furnace.setBurnTime((short) 800);
+				furnace.setCookTime((short) 800);
+				furnace.update();
 			} else if (FireStream.isIgnitable(player, block.getRelative(BlockFace.UP))) {
 				ignite(location);
 			}
@@ -135,9 +144,10 @@ public class FireBlast {
 			return false;
 		}
 
-		Methods.removeSpouts(location, player);
+		WaterMethods.removeWaterSpouts(location, player);
+		AirMethods.removeAirSpouts(location, player);
 
-		double radius = FireBlast.affectingradius;
+		double radius = affectingradius;
 		Player source = player;
 		if (EarthBlast.annihilateBlasts(location, radius, source)
 				|| WaterManipulation.annihilateBlasts(location, radius, source)
@@ -146,7 +156,7 @@ public class FireBlast {
 			return false;
 		}
 
-		for (Entity entity : Methods.getEntitiesAroundPoint(location, affectingradius)) {
+		for (Entity entity : GeneralMethods.getEntitiesAroundPoint(location, affectingradius)) {
 			// Block bblock = location.getBlock();
 			// Block block1 = entity.getLocation().getBlock();
 			// if (bblock.equals(block1))
@@ -169,18 +179,21 @@ public class FireBlast {
 	}
 
 	private void advanceLocation() {
-		if (showParticles)
-			location.getWorld().playEffect(location, Effect.MOBSPAWNER_FLAMES, 0, (int) range);
+		if (showParticles) {
+			//ParticleEffect.RED_DUST.display((float) 16, (float) 111, (float) 227, 0.01F, 0, location, 256D);
+			ParticleEffect.FLAME.display(location, 0.6F, 0.6F, 0.6F, 0, 20);
+			ParticleEffect.SMOKE.display(location, 0.6F, 0.6F, 0.6F, 0, 20);
+		}
 		location = location.add(direction.clone().multiply(speedfactor));
 		if (rand.nextInt(4) == 0) {
-			Methods.playFirebendingSound(location);
+			FireMethods.playFirebendingSound(location);
 		}		
 	}
 
 	private void ignite(Location location) {
-		for (Block block : Methods.getBlocksAroundPoint(location, affectingradius)) {
+		for (Block block : GeneralMethods.getBlocksAroundPoint(location, affectingradius)) {
 			if (FireStream.isIgnitable(player, block) && !safe.contains(block)) {
-				if (Methods.isPlant(block))
+				if (WaterMethods.isPlant(block))
 					new Plantbending(block);
 				block.setType(Material.FIRE);
 				if (dissipate) {
@@ -218,14 +231,14 @@ public class FireBlast {
 	private void affect(Entity entity) {
 		if (entity.getEntityId() != player.getEntityId()) {
 			if (AvatarState.isAvatarState(player)) {
-				Methods.setVelocity(entity, direction.clone().multiply(AvatarState.getValue(pushfactor)));
+				GeneralMethods.setVelocity(entity, direction.clone().multiply(AvatarState.getValue(pushfactor)));
 			} else {
-				Methods.setVelocity(entity, direction.clone().multiply(pushfactor));
+				GeneralMethods.setVelocity(entity, direction.clone().multiply(pushfactor));
 			}
 			if (entity instanceof LivingEntity) {
 				entity.setFireTicks(50);
-				Methods.damageEntity(player, entity, (int) Methods.getFirebendingDayAugment((double) damage, entity.getWorld()));
-				Methods.breakBreathbendingHold(entity);
+				GeneralMethods.damageEntity(player, entity, (int) FireMethods.getFirebendingDayAugment((double) damage, entity.getWorld()));
+				AirMethods.breakBreathbendingHold(entity);
 				new Enflamed(entity, player);
 				instances.remove(id);
 			}
@@ -286,6 +299,52 @@ public class FireBlast {
 				+ "Additionally, if you hold sneak, you will charge up the fireblast. "
 				+ "If you release it when it's charged, it will instead launch a powerful "
 				+ "fireball that explodes on contact.";
+	}
+
+	public long getCooldown() {
+		return cooldown;
+	}
+
+	public void setCooldown(long cooldown) {
+		this.cooldown = cooldown;
+		if(player != null)
+			GeneralMethods.getBendingPlayer(player.getName()).addCooldown("FireBlast", cooldown);
+	}
+
+	public Player getPlayer() {
+		return player;
+	}
+
+	public double getSpeed() {
+		return speed;
+	}
+
+	public void setSpeed(double speed) {
+		this.speed = speed;
+	}
+
+	public double getPushfactor() {
+		return pushfactor;
+	}
+
+	public void setPushfactor(double pushfactor) {
+		this.pushfactor = pushfactor;
+	}
+
+	public double getAffectingradius() {
+		return affectingradius;
+	}
+
+	public void setAffectingradius(double affectingradius) {
+		this.affectingradius = affectingradius;
+	}
+
+	public double getRange() {
+		return range;
+	}
+
+	public double getDamage() {
+		return damage;
 	}
 
 }

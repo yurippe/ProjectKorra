@@ -1,7 +1,11 @@
 package com.projectkorra.ProjectKorra.waterbending;
 
-import java.util.ArrayList;
-import java.util.concurrent.ConcurrentHashMap;
+import com.projectkorra.ProjectKorra.Flight;
+import com.projectkorra.ProjectKorra.GeneralMethods;
+import com.projectkorra.ProjectKorra.ProjectKorra;
+import com.projectkorra.ProjectKorra.TempBlock;
+import com.projectkorra.ProjectKorra.Utilities.ParticleEffect;
+import com.projectkorra.ProjectKorra.chiblocking.Paralyze;
 
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -10,11 +14,8 @@ import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.potion.PotionEffectType;
 
-import com.projectkorra.ProjectKorra.Flight;
-import com.projectkorra.ProjectKorra.Methods;
-import com.projectkorra.ProjectKorra.ProjectKorra;
-import com.projectkorra.ProjectKorra.TempBlock;
-import com.projectkorra.ProjectKorra.chiblocking.Paralyze;
+import java.util.ArrayList;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class WaterSpout {
 
@@ -23,15 +24,21 @@ public class WaterSpout {
 	public static ConcurrentHashMap<Block, Block> newaffectedblocks = new ConcurrentHashMap<Block, Block>();
 	public static ConcurrentHashMap<Block, Block> baseblocks = new ConcurrentHashMap<Block, Block>();
 
-	private static final int defaultheight = ProjectKorra.plugin.getConfig().getInt("Abilities.Water.WaterSpout.Height");
+	private static final int HEIGHT = ProjectKorra.plugin.getConfig().getInt("Abilities.Water.WaterSpout.Height");
+	private static final boolean PARTICLES = ProjectKorra.plugin.getConfig().getBoolean("Abilities.Water.WaterSpout.Particles");
 
 	// private static final double threshold = .05;
 	// private static final byte half = 0x4;
+	@SuppressWarnings("unused")
 	private static final byte full = 0x0;
 	private Player player;
 	private Block base;
 	private TempBlock baseblock;
-
+	private int defaultheight = HEIGHT;
+	private long time = 0;
+	private long interval = 50;
+	private int angle = 0;
+	
 	public WaterSpout(Player player) {
 		//		if (BendingPlayer.getBendingPlayer(player).isOnCooldown(
 		//				Abilities.WaterSpout))
@@ -47,7 +54,7 @@ public class WaterSpout {
 		if(WaterWave.instances.contains(wwave))
 			return;
 		
-		Block topBlock = Methods.getTopBlock(player.getLocation(), 0, -50);
+		Block topBlock = GeneralMethods.getTopBlock(player.getLocation(), 0, -50);
 		if(topBlock == null)
 			topBlock = player.getLocation().getBlock();
 		Material mat = topBlock.getType();
@@ -74,7 +81,7 @@ public class WaterSpout {
 		for (Player player : instances.keySet()) {
 			if (!player.isOnline() || player.isDead()) {
 				instances.get(player).remove();
-			} else if (Methods.canBend(player.getName(), "WaterSpout")) {
+			} else if (GeneralMethods.canBend(player.getName(), "WaterSpout")) {
 				spout(player);
 			} else {
 				instances.get(player).remove();
@@ -122,8 +129,8 @@ public class WaterSpout {
 
 			player.setFallDistance(0);
 			player.setSprinting(false);
-			if (Methods.rand.nextInt(4) == 0) {
-				Methods.playWaterbendingSound(player.getLocation());
+			if (GeneralMethods.rand.nextInt(4) == 0) {
+				WaterMethods.playWaterbendingSound(player.getLocation());
 			}		
 			// if (player.getVelocity().length() > threshold) {
 			// // Methods.verbose("Too fast!");
@@ -149,6 +156,7 @@ public class WaterSpout {
 					if (!affectedblocks.containsKey(block)) {
 						affectedblocks.put(block, block);
 					}
+					instances.get(player).rotateParticles(block);
 					newaffectedblocks.put(block, block);
 				}
 				if (player.getLocation().getBlockY() > block.getY()) {
@@ -163,17 +171,55 @@ public class WaterSpout {
 			}
 		}
 	}
+	
+	public void rotateParticles(Block block)
+	{
+		if(!PARTICLES)
+			return;
+		
+		if (System.currentTimeMillis() >= time + interval)
+		{
+			time = System.currentTimeMillis();
+
+			Location location = block.getLocation();
+			Location playerloc = player.getLocation();
+			location = new Location(location.getWorld(), playerloc.getX(), location.getY(), playerloc.getZ());
+
+			double dy = playerloc.getY() - block.getY();
+			if (dy > HEIGHT)
+				dy = HEIGHT;
+			float[] directions = { -0.5f, 0.325f, 0.25f, 0.125f, 0.f, 0.125f, 0.25f, 0.325f, 0.5f };
+			int index = angle;
+
+			angle++;
+			if (angle >= directions.length)
+				angle = 0;
+			for (int i = 1; i <= dy; i++)
+			{
+
+				index += 1;
+				if (index >= directions.length)
+					index = 0;
+
+				Location effectloc2 = new Location(location.getWorld(), location.getX(), block.getY() + i,
+						location.getZ());
+
+				ParticleEffect.WATER_SPLASH.display(effectloc2, directions[index], directions[index],
+						directions[index], 5, HEIGHT + 5);
+			}
+		}
+	}
 
 	private static int spoutableWaterHeight(Location location, Player player) {
 		WaterSpout spout = instances.get(player);
-		int height = defaultheight;
-		if (Methods.isNight(player.getWorld()))
-			height = (int) Methods.waterbendingNightAugment((double) height, player.getWorld());
-		int maxheight = (int) ((double) defaultheight * ProjectKorra.plugin.getConfig().getDouble("Properties.Water.NightFactor")) + 5;
+		int height = spout.defaultheight;
+		if (WaterMethods.isNight(player.getWorld()))
+			height = (int) WaterMethods.waterbendingNightAugment((double) height, player.getWorld());
+		int maxheight = (int) ((double) spout.defaultheight * ProjectKorra.plugin.getConfig().getDouble("Properties.Water.NightFactor")) + 5;
 		Block blocki;
 		for (int i = 0; i < maxheight; i++) {
 			blocki = location.clone().add(0, -i, 0).getBlock();
-			if (Methods.isRegionProtectedFromBuild(player, "WaterSpout", blocki.getLocation()))
+			if (GeneralMethods.isRegionProtectedFromBuild(player, "WaterSpout", blocki.getLocation()))
 				return -1;
 			if (!affectedblocks.contains(blocki)) {
 				if (blocki.getType() == Material.WATER || blocki.getType() == Material.STATIONARY_WATER) {
@@ -197,7 +243,7 @@ public class WaterSpout {
 						return height;
 					return i;
 				}
-				if ((blocki.getType() != Material.AIR && (!Methods.isPlant(blocki) || !Methods.canPlantbend(player)))) {
+				if ((blocki.getType() != Material.AIR && (!WaterMethods.isPlant(blocki) || !WaterMethods.canPlantbend(player)))) {
 					revertBaseBlock(player);
 					return -1;
 				}
@@ -246,7 +292,7 @@ public class WaterSpout {
 
 				double distance = Math.sqrt(dx * dx + dz * dz);
 
-				if (distance <= radius && dy > 0 && dy < defaultheight){
+				if (distance <= radius && dy > 0 && dy < instances.get(player).defaultheight){
 					removed = true;
 					instances.get(player).remove();
 				}
@@ -261,5 +307,17 @@ public class WaterSpout {
 				+ "This ability is a toggle, so you can activate it then use other abilities and it "
 				+ "will remain on. If you try to spout over an area with no water, snow or ice, "
 				+ "the spout will dissipate and you will fall. Click again with this ability selected to deactivate it.";
+	}
+
+	public Player getPlayer() {
+		return player;
+	}
+
+	public int getDefaultheight() {
+		return defaultheight;
+	}
+
+	public void setDefaultheight(int defaultheight) {
+		this.defaultheight = defaultheight;
 	}
 }

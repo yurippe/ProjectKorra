@@ -9,7 +9,7 @@ import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Player;
 
 import com.projectkorra.ProjectKorra.BendingPlayer;
-import com.projectkorra.ProjectKorra.Methods;
+import com.projectkorra.ProjectKorra.GeneralMethods;
 import com.projectkorra.ProjectKorra.ProjectKorra;
 
 public class Collapse {
@@ -23,21 +23,22 @@ public class Collapse {
 	private double radius = defaultradius;
 	private Player player;
 
+	@SuppressWarnings("deprecation")
 	public Collapse(Player player) {
-		BendingPlayer bPlayer = Methods.getBendingPlayer(player.getName());
+		BendingPlayer bPlayer = GeneralMethods.getBendingPlayer(player.getName());
 		if (bPlayer.isOnCooldown("Collapse")) return;
 
 		this.player = player;
-		Block sblock = Methods.getEarthSourceBlock(player, range);
+		Block sblock = EarthMethods.getEarthSourceBlock(player, range);
 		Location location;
 		if (sblock == null) {
 			location = player.getTargetBlock(
-					Methods.getTransparentEarthbending(), range).getLocation();
+					EarthMethods.getTransparentEarthbending(), range).getLocation();
 		} else {
 			location = sblock.getLocation();
 		}
-		for (Block block : Methods.getBlocksAroundPoint(location, radius)) {
-			if (Methods.isEarthbendable(player, block)
+		for (Block block : GeneralMethods.getBlocksAroundPoint(location, radius)) {
+			if (EarthMethods.isEarthbendable(player, block)
 					&& !blocks.containsKey(block)
 					&& block.getY() >= location.getBlockY()) {
 				getAffectedBlocks(block);
@@ -45,7 +46,7 @@ public class Collapse {
 		}
 
 		if (!baseblocks.isEmpty()) {
-			bPlayer.addCooldown("Collapse", Methods.getGlobalCooldown());
+			bPlayer.addCooldown("Collapse", GeneralMethods.getGlobalCooldown());
 		}
 
 		for (Block block : baseblocks.keySet()) {
@@ -60,7 +61,7 @@ public class Collapse {
 		bendableblocks.add(block);
 		for (int i = 1; i <= height; i++) {
 			Block blocki = block.getRelative(BlockFace.DOWN, i);
-			if (Methods.isEarthbendable(player, blocki)) {
+			if (EarthMethods.isEarthbendable(player, blocki)) {
 				baseblock = blocki;
 				bendableblocks.add(blocki);
 				tall++;

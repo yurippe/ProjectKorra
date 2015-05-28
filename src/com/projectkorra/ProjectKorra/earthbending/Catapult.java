@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.bukkit.Effect;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
@@ -13,18 +12,18 @@ import org.bukkit.util.Vector;
 
 import com.projectkorra.ProjectKorra.BendingPlayer;
 import com.projectkorra.ProjectKorra.Flight;
-import com.projectkorra.ProjectKorra.Methods;
+import com.projectkorra.ProjectKorra.GeneralMethods;
 import com.projectkorra.ProjectKorra.ProjectKorra;
 
 public class Catapult {
 
 	public static ConcurrentHashMap<Integer, Catapult> instances = new ConcurrentHashMap<Integer, Catapult>();
 
-	private static int length = ProjectKorra.plugin.getConfig().getInt("Abilities.Earth.Catapult.Length");
-	private static double speed = ProjectKorra.plugin.getConfig().getDouble("Abilities.Earth.Catapult.Speed");
-	private static double push = ProjectKorra.plugin.getConfig().getDouble("Abilities.Earth.Catapult.Push");
+	private static int LENGTH = ProjectKorra.plugin.getConfig().getInt("Abilities.Earth.Catapult.Length");
+	private static double SPEED = ProjectKorra.plugin.getConfig().getDouble("Abilities.Earth.Catapult.Speed");
+	private static double PUSH = ProjectKorra.plugin.getConfig().getDouble("Abilities.Earth.Catapult.Push");
 
-	private static long interval = (long) (1000. / speed);
+	private static long interval = (long) (1000. / SPEED);
 
 	private Player player;
 	private Location origin;
@@ -34,12 +33,15 @@ public class Catapult {
 	private boolean catapult = false;
 	private boolean moving = false;
 	private boolean flying = false;
+	private int length = LENGTH;
+	private double speed = SPEED;
+	private double push = PUSH;
 	private long time;
 	private long starttime;
 	private int ticks = 0;
 
 	public Catapult(Player player) {
-		BendingPlayer bPlayer = Methods.getBendingPlayer(player.getName());
+		BendingPlayer bPlayer = GeneralMethods.getBendingPlayer(player.getName());
 		if (bPlayer.isOnCooldown("Catapult")) return;
 
 		this.player = player;
@@ -52,11 +54,11 @@ public class Catapult {
 		for (int i = 0; i <= length; i++) {
 			location = origin.clone().add(neg.clone().multiply((double) i));
 			block = location.getBlock();
-			if (Methods.isEarthbendable(player, block)) {
-				distance = Methods.getEarthbendableBlocksLength(player, block,
+			if (EarthMethods.isEarthbendable(player, block)) {
+				distance = EarthMethods.getEarthbendableBlocksLength(player, block,
 						neg, length - i);
 				break;
-			} else if (!Methods.isTransparentToEarthbending(player, block)) {
+			} else if (!EarthMethods.isTransparentToEarthbending(player, block)) {
 				break;
 			}
 		}
@@ -70,7 +72,7 @@ public class Catapult {
 			starttime = System.currentTimeMillis();
 			moving = true;
 			instances.put(player.getEntityId(), this);
-			bPlayer.addCooldown("Catapult", Methods.getGlobalCooldown());
+			bPlayer.addCooldown("Catapult", GeneralMethods.getGlobalCooldown());
 		}
 
 	}
@@ -85,7 +87,7 @@ public class Catapult {
 		distance = source.distance;
 		time = source.time;
 		instances.put(player.getEntityId(), this);
-		Methods.playEarthbendingSound(player.getLocation());
+		EarthMethods.playEarthbendingSound(player.getLocation());
 		fly();
 	}
 	
@@ -135,9 +137,9 @@ public class Catapult {
 			return;
 		}
 
-		for (Block block : Methods
+		for (Block block : GeneralMethods
 				.getBlocksAroundPoint(player.getLocation(), 1.5)) {
-			if ((Methods.isSolid(block) || block.isLiquid())) {
+			if ((GeneralMethods.isSolid(block) || block.isLiquid())) {
 				// Methods.verbose("Catapulting stopped");
 				flying = false;
 				return;
@@ -169,7 +171,7 @@ public class Catapult {
 		if (catapult) {
 			if (location.distance(origin) < .5) {
 				boolean remove = false;
-				for (Entity entity : Methods.getEntitiesAroundPoint(origin, 2)) {
+				for (Entity entity : GeneralMethods.getEntitiesAroundPoint(origin, 2)) {
 					if (entity instanceof Player) {
 						Player target = (Player) entity;
 						boolean equal = target.getEntityId() == player
@@ -192,14 +194,14 @@ public class Catapult {
 			}
 		} else {
 			if (location.distance(origin) <= length - distance) {
-				for (Entity entity : Methods.getEntitiesAroundPoint(location, 2)) {
+				for (Entity entity : GeneralMethods.getEntitiesAroundPoint(location, 2)) {
 					entity.setVelocity(direction.clone().multiply(
 							push * distance / length));
 				}
 				return false;
 			}
 		}
-		Methods.moveEarth(player, location.clone().subtract(direction),
+		EarthMethods.moveEarth(player, location.clone().subtract(direction),
 				direction, distance, false);
 		return true;
 	}
@@ -227,5 +229,33 @@ public class Catapult {
 				+ "Skillful use of this ability takes much time and work, and it does result in the "
 				+ "death of certain gung-ho earthbenders. If you plan to use this ability, be sure "
 				+ "you've read about your passive ability you innately have as an earthbender.";
+	}
+
+	public Player getPlayer() {
+		return player;
+	}
+
+	public int getLength() {
+		return length;
+	}
+
+	public void setLength(int length) {
+		this.length = length;
+	}
+
+	public double getSpeed() {
+		return speed;
+	}
+
+	public void setSpeed(double speed) {
+		this.speed = speed;
+	}
+
+	public double getPush() {
+		return push;
+	}
+
+	public void setPush(double push) {
+		this.push = push;
 	}
 }

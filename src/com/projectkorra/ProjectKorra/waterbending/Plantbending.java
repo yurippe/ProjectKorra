@@ -5,7 +5,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 
-import com.projectkorra.ProjectKorra.Methods;
+import com.projectkorra.ProjectKorra.GeneralMethods;
 import com.projectkorra.ProjectKorra.ProjectKorra;
 
 public class Plantbending {
@@ -21,6 +21,7 @@ public class Plantbending {
 	private long time;
 	private int id;
 
+	@SuppressWarnings("deprecation")
 	public Plantbending(Block block) {
 		if (regrowtime != 0) {
 			this.block = block;
@@ -37,12 +38,13 @@ public class Plantbending {
 		}
 	}
 
+	@SuppressWarnings("deprecation")
 	private void revert() {
 		if (block.getType() == Material.AIR) {
 			block.setType(type);
 			block.setData(data);
 		} else {
-			Methods.dropItems(block, Methods.getDrops(block, type, data, null));
+			GeneralMethods.dropItems(block, GeneralMethods.getDrops(block, type, data, null));
 		}
 		instances.remove(id);
 	}

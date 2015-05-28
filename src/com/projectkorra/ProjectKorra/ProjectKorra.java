@@ -1,20 +1,21 @@
 package com.projectkorra.ProjectKorra;
 
-import java.io.IOException;
-import java.util.logging.Logger;
-
-import org.bukkit.Bukkit;
-import org.bukkit.entity.Player;
-import org.bukkit.plugin.java.JavaPlugin;
-
 import com.projectkorra.ProjectKorra.Ability.AbilityModuleManager;
+import com.projectkorra.ProjectKorra.Ability.Combo.ComboModuleManager;
 import com.projectkorra.ProjectKorra.Objects.Preset;
 import com.projectkorra.ProjectKorra.Utilities.CraftingRecipes;
 import com.projectkorra.ProjectKorra.airbending.AirbendingManager;
+import com.projectkorra.ProjectKorra.chiblocking.ChiComboManager;
 import com.projectkorra.ProjectKorra.chiblocking.ChiblockingManager;
 import com.projectkorra.ProjectKorra.earthbending.EarthbendingManager;
 import com.projectkorra.ProjectKorra.firebending.FirebendingManager;
 import com.projectkorra.ProjectKorra.waterbending.WaterbendingManager;
+import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
+import org.bukkit.plugin.java.JavaPlugin;
+
+import java.io.IOException;
+import java.util.logging.Logger;
 
 public class ProjectKorra extends JavaPlugin {
 
@@ -28,10 +29,12 @@ public class ProjectKorra extends JavaPlugin {
 		plugin = this;
 		new ConfigManager(this);
 
-		new Methods(this);
+		new GeneralMethods(this);
 		new Commands(this);
 		new AbilityModuleManager(this);
+		new ComboModuleManager();
 		new ComboManager();
+		new ChiComboManager();
 
 		ConfigManager.configCheck();
 
@@ -49,15 +52,14 @@ public class ProjectKorra extends JavaPlugin {
 		getServer().getScheduler().scheduleSyncRepeatingTask(this, new ChiblockingManager(this), 0, 1);
 
 		DBConnection.init();
+		if (DBConnection.isOpen() == false) return;
+		
 		for (Player player: Bukkit.getOnlinePlayers()) {
-			Methods.createBendingPlayer(player.getUniqueId(), player.getName());
+			GeneralMethods.createBendingPlayer(player.getUniqueId(), player.getName());
 			Preset.loadPresets(player);
 		}
 		getServer().getPluginManager().registerEvents(new PKListener(this), this);
 
-		if (getServer().getPluginManager().getPlugin("TagAPI") != null) {
-			getServer().getPluginManager().registerEvents(new TagAPIListener(this), this);
-		}
 		
 		getServer().getScheduler().runTaskTimerAsynchronously(this, new RevertChecker(this), 0, 200);
 
@@ -65,16 +67,22 @@ public class ProjectKorra extends JavaPlugin {
 			MetricsLite metrics = new MetricsLite(this);
 			metrics.start();
 		} catch (IOException e) {
+			e.printStackTrace();
 		}
 
-		Methods.deserializeFile();
-
+		GeneralMethods.deserializeFile();
+		GeneralMethods.startCacheCleaner(GeneralMethods.CACHE_TIME);
 		new CraftingRecipes(this);
 	}
 
 	@Override
 	public void onDisable() {
-		Methods.stopBending();
+		GeneralMethods.stopBending();
+		if (DBConnection.isOpen == false) return;
 		DBConnection.sql.close();
+	}
+	
+	public void stopPlugin() {
+		getServer().getPluginManager().disablePlugin(plugin);
 	}
 }

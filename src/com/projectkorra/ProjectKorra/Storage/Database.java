@@ -1,11 +1,15 @@
 package com.projectkorra.ProjectKorra.Storage;
 
 import java.sql.Connection;
+import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.sql.DatabaseMetaData;
 import java.util.logging.Logger;
+
+import org.bukkit.scheduler.BukkitRunnable;
+
+import com.projectkorra.ProjectKorra.ProjectKorra;
 
 public abstract class Database {
 
@@ -21,44 +25,44 @@ public abstract class Database {
     }
 
     /**
-* Print information to console
-*
-* @param message The string to print to console
-*/
+     * Print information to console
+     *
+     * @param message The string to print to console
+     */
     protected void printInfo(String message) {
         log.info(prefix + dbprefix + message);
     }
 
     /**
-* Print error to console
-*
-* @param message The string to print to console
-* @param severe If {@param severe} is true print an error, else print a warning
-*/
+     * Print error to console
+     *
+     * @param message The string to print to console
+     * @param severe If {@param severe} is true print an error, else print a warning
+     */
     protected void printErr(String message, boolean severe) {
         if (severe) log.severe(prefix + dbprefix + message);
         else log.warning(prefix + dbprefix + message);
     }
 
     /**
-* Returns the current Connection
-*
-* @return Connection if exists, else null
-*/
+     * Returns the current Connection
+     *
+     * @return Connection if exists, else null
+     */
     public Connection getConnection() {
         return this.connection;
     }
 
     /**
-* Opens connection to Database
-*
-* @return Connection if successful
-*/
+     * Opens connection to Database
+     *
+     * @return Connection if successful
+     */
     abstract Connection open();
 
     /**
-* Close connection to Database
-*/
+     * Close connection to Database
+     */
     public void close() {
         if (!(this.connection == null)) {
             try {
@@ -72,27 +76,32 @@ public abstract class Database {
     }
 
     /**
-* Queries the Database, for queries which modify data
-*
-* @param query Query to run
-*/
-    public void modifyQuery(String query) {
-        try {
-            Statement stmt = this.connection.createStatement();
-            stmt.execute(query);
-
-            stmt.close();
-        } catch(SQLException e) {
-            e.printStackTrace();
-        }
+     * Queries the Database, for queries which modify data
+     *
+     * @param query Query to run
+     */
+    public void modifyQuery(final String query) {
+    	new BukkitRunnable() {
+    		@Override
+    		public void run() {
+    			try {
+    				Statement stmt = connection.createStatement();
+    				stmt.execute(query);
+    				
+    				stmt.close();
+    			} catch (SQLException e) {
+    				e.printStackTrace();
+    			}
+    		}
+    	}.runTaskAsynchronously(ProjectKorra.plugin);
     }
 
     /**
-* Queries the Database, for queries which return results
-*
-* @param query Query to run
-* @return Result set of ran query
-*/
+     * Queries the Database, for queries which return results
+     *
+     * @param query Query to run
+     * @return Result set of ran query
+     */
     public ResultSet readQuery(String query) {
         try {
             Statement stmt = this.connection.createStatement();
@@ -106,11 +115,11 @@ public abstract class Database {
     }
 
     /**
-* Check database to see if {@param table} exists
-*
-* @param table Table name to check
-* @return True if table exists, else false
-*/
+     * Check database to see if {@param table} exists
+     *
+     * @param table Table name to check
+     * @return True if table exists, else false
+     */
     public boolean tableExists(String table) {
         try {
             DatabaseMetaData dmd = this.connection.getMetaData();

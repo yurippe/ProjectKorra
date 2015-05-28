@@ -3,7 +3,6 @@ package com.projectkorra.ProjectKorra.firebending;
 import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.bukkit.Effect;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
@@ -13,26 +12,29 @@ import org.bukkit.entity.Projectile;
 import org.bukkit.util.Vector;
 
 import com.projectkorra.ProjectKorra.BendingPlayer;
-import com.projectkorra.ProjectKorra.Methods;
+import com.projectkorra.ProjectKorra.GeneralMethods;
 import com.projectkorra.ProjectKorra.ProjectKorra;
-import com.projectkorra.ProjectKorra.airbending.AirShield;
+import com.projectkorra.ProjectKorra.Utilities.ParticleEffect;
 import com.projectkorra.ProjectKorra.earthbending.EarthBlast;
 import com.projectkorra.ProjectKorra.waterbending.WaterManipulation;
 
 public class FireShield {
 
-	private static ConcurrentHashMap<Player, FireShield> instances = new ConcurrentHashMap<Player, FireShield>();
+	public static ConcurrentHashMap<Player, FireShield> instances = new ConcurrentHashMap<Player, FireShield>();
 
 	private static long interval = 100;
-	private static long duration = ProjectKorra.plugin.getConfig().getLong("Abilities.Fire.FireShield.Duration");
-	private static double radius = ProjectKorra.plugin.getConfig().getDouble("Abilities.Fire.FireShield.Radius");
-	private static double discradius = ProjectKorra.plugin.getConfig().getDouble("Abilities.Fire.FireShield.DiscRadius");
+	private static long DURATION = ProjectKorra.plugin.getConfig().getLong("Abilities.Fire.FireShield.Duration");
+	private static double RADIUS = ProjectKorra.plugin.getConfig().getDouble("Abilities.Fire.FireShield.Radius");
+	private static double DISC_RADIUS = ProjectKorra.plugin.getConfig().getDouble("Abilities.Fire.FireShield.DiscRadius");
 	private static boolean ignite = true;
 
 	private Player player;
 	private long time;
 	private long starttime;
 	private boolean shield = false;
+	private long duration = DURATION;
+	private double radius = RADIUS;
+	private double discradius = DISC_RADIUS;
 
 	public FireShield(Player player) {
 		this(player, false);
@@ -43,7 +45,7 @@ public class FireShield {
 		this.shield = shield;
 		if (instances.containsKey(player))
 			return;
-		BendingPlayer bPlayer = Methods.getBendingPlayer(player.getName());
+		BendingPlayer bPlayer = GeneralMethods.getBendingPlayer(player.getName());
 
 		if (bPlayer.isOnCooldown("FireShield")) return;
 
@@ -52,7 +54,7 @@ public class FireShield {
 			starttime = time;
 			instances.put(player, this);
 			if (!shield)
-				bPlayer.addCooldown("FireShield", Methods.getGlobalCooldown());
+				bPlayer.addCooldown("FireShield", GeneralMethods.getGlobalCooldown());
 		}
 	}
 
@@ -65,7 +67,7 @@ public class FireShield {
 	}
 
 	private void progress() {
-		if (((!player.isSneaking()) && shield) || !Methods.canBend(player.getName(), "FireShield")) {
+		if (((!player.isSneaking()) && shield) || !GeneralMethods.canBend(player.getName(), "FireShield")) {
 			remove();
 			return;
 		}
@@ -96,22 +98,23 @@ public class FireShield {
 								radius * Math.cos(rphi) * Math.sin(rtheta),
 								radius * Math.cos(rtheta),
 								radius * Math.sin(rphi)	* Math.sin(rtheta)).getBlock();
-						if (!blocks.contains(block) && !Methods.isSolid(block) && !block.isLiquid())
+						if (!blocks.contains(block) && !GeneralMethods.isSolid(block) && !block.isLiquid())
 							blocks.add(block);
 					}
 				}
 
 				for (Block block : blocks) {
-					if (!Methods.isRegionProtectedFromBuild(player,	"FireShield", block.getLocation())) {
-						block.getWorld().playEffect(block.getLocation(), Effect.MOBSPAWNER_FLAMES, 0, 20);
-						if (Methods.rand.nextInt(7) == 0) {
-							Methods.playFirebendingSound(block.getLocation());
+					if (!GeneralMethods.isRegionProtectedFromBuild(player,	"FireShield", block.getLocation())) {
+						ParticleEffect.FLAME.display(block.getLocation(), 0.6F, 0.6F, 0.6F, 0, 10);
+						ParticleEffect.SMOKE.display(block.getLocation(), 0.6F, 0.6F, 0.6F, 0, 10);
+						if (GeneralMethods.rand.nextInt(7) == 0) {
+							FireMethods.playFirebendingSound(block.getLocation());
 						}
 					}
 				}
 
-				for (Entity entity : Methods.getEntitiesAroundPoint(location, radius)) {
-					if (Methods.isRegionProtectedFromBuild(player, "FireShield", entity.getLocation()))
+				for (Entity entity : GeneralMethods.getEntitiesAroundPoint(location, radius)) {
+					if (GeneralMethods.isRegionProtectedFromBuild(player, "FireShield", entity.getLocation()))
 						continue;
 					if (player.getEntityId() != entity.getEntityId() && ignite) {
 						entity.setFireTicks(120);
@@ -131,29 +134,29 @@ public class FireShield {
 				Vector direction = location.getDirection();
 				location = location.clone().add(direction.multiply(radius));
 
-				if (Methods.isRegionProtectedFromBuild(player, "FireShield", location)) {
+				if (GeneralMethods.isRegionProtectedFromBuild(player, "FireShield", location)) {
 					remove();
 					return;
 				}
 
 				for (double theta = 0; theta < 360; theta += 20) {
-					Vector vector = Methods.getOrthogonalVector(direction, theta, discradius);
+					Vector vector = GeneralMethods.getOrthogonalVector(direction, theta, discradius);
 					Block block = location.clone().add(vector).getBlock();
-					if (!blocks.contains(block) && !Methods.isSolid(block) && !block.isLiquid())
+					if (!blocks.contains(block) && !GeneralMethods.isSolid(block) && !block.isLiquid())
 						blocks.add(block);
 				}
 
 				for (Block block : blocks) {
-					if (!Methods.isRegionProtectedFromBuild(player, "FireShield", block.getLocation())) {
-						block.getWorld().playEffect(block.getLocation(), Effect.MOBSPAWNER_FLAMES, 0, 20);
-						if (Methods.rand.nextInt(4) == 0) {
-							Methods.playFirebendingSound(block.getLocation());
+					if (!GeneralMethods.isRegionProtectedFromBuild(player, "FireShield", block.getLocation())) {
+						ParticleEffect.FLAME.display(block.getLocation(), 0.6F, 0.6F, 0.6F, 0, 20);
+						if (GeneralMethods.rand.nextInt(4) == 0) {
+							FireMethods.playFirebendingSound(block.getLocation());
 						}
 					}
 				}
 
-				for (Entity entity : Methods.getEntitiesAroundPoint(location, discradius)) {
-					if (Methods.isRegionProtectedFromBuild(player, "FireShield", entity.getLocation()))
+				for (Entity entity : GeneralMethods.getEntitiesAroundPoint(location, discradius)) {
+					if (GeneralMethods.isRegionProtectedFromBuild(player, "FireShield", entity.getLocation()))
 						continue;
 					if (player.getEntityId() != entity.getEntityId() && ignite) {
 						entity.setFireTicks(120);
@@ -168,7 +171,7 @@ public class FireShield {
 				EarthBlast.removeAroundPoint(location, discradius);
 				FireStream.removeAroundPoint(location, discradius);
 				Combustion.removeAroundPoint(location, discradius);
-				for (Entity entity: Methods.getEntitiesAroundPoint(location, discradius)) {
+				for (Entity entity: GeneralMethods.getEntitiesAroundPoint(location, discradius)) {
 					if (entity instanceof Projectile) {
 						entity.remove();
 					}
@@ -182,13 +185,16 @@ public class FireShield {
 			FireShield fshield = instances.get(player);
 			Location playerLoc = fshield.player.getLocation();
 
-			if(fshield.shield){
-				if(playerLoc.distance(loc) <= FireShield.radius)
+			if(fshield.shield) {
+				if (playerLoc.getWorld() != loc.getWorld())
+					return false;
+				if(playerLoc.distance(loc) <= fshield.radius)
 					return true;
-			}
-			else{
-				Location tempLoc = playerLoc.clone().add(playerLoc.multiply(radius));
-				if(tempLoc.distance(loc) <= FireShield.discradius)
+			} else {
+				Location tempLoc = playerLoc.clone().add(playerLoc.multiply(fshield.discradius));
+				if (tempLoc.getWorld() != loc.getWorld()) 
+					return false;
+				if(tempLoc.distance(loc) <= fshield.discradius)
 					return true;
 			}
 		}
@@ -211,5 +217,41 @@ public class FireShield {
 
 	public static void removeAll() {
 		instances.clear();
+	}
+
+	public Player getPlayer() {
+		return player;
+	}
+
+	public boolean isShield() {
+		return shield;
+	}
+
+	public void setShield(boolean shield) {
+		this.shield = shield;
+	}
+
+	public long getDuration() {
+		return duration;
+	}
+
+	public void setDuration(long duration) {
+		this.duration = duration;
+	}
+
+	public double getRadius() {
+		return radius;
+	}
+
+	public void setRadius(double radius) {
+		this.radius = radius;
+	}
+
+	public double getDiscradius() {
+		return discradius;
+	}
+
+	public void setDiscradius(double discradius) {
+		this.discradius = discradius;
 	}
 }

@@ -9,19 +9,20 @@ import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Player;
 
 import com.projectkorra.ProjectKorra.Flight;
-import com.projectkorra.ProjectKorra.Methods;
+import com.projectkorra.ProjectKorra.GeneralMethods;
 import com.projectkorra.ProjectKorra.ProjectKorra;
 
 public class AirSpout {
 
-	private static ConcurrentHashMap<Player, AirSpout> instances = new ConcurrentHashMap<Player, AirSpout>();
+	public static ConcurrentHashMap<Player, AirSpout> instances = new ConcurrentHashMap<Player, AirSpout>();
 
-	private static final double height = ProjectKorra.plugin.getConfig().getDouble("Abilities.Air.AirSpout.Height");
+	private static final double HEIGHT = ProjectKorra.plugin.getConfig().getDouble("Abilities.Air.AirSpout.Height");
 	private static final long interval = 100;
 
 	private Player player;
 	private long time;
 	private int angle = 0;
+	private double height = HEIGHT;
 
 	public AirSpout(Player player) {
 
@@ -49,18 +50,18 @@ public class AirSpout {
 	}
 
 	private void spout() {
-		if (!Methods.canBend(player.getName(), "AirSpout")
+		if (!GeneralMethods.canBend(player.getName(), "AirSpout")
 //				|| !Methods.hasAbility(player, Abilities.AirSpout)
 				|| player.getEyeLocation().getBlock().isLiquid()
-				|| Methods.isSolid(player.getEyeLocation().getBlock())
+				|| GeneralMethods.isSolid(player.getEyeLocation().getBlock())
 				|| player.isDead() || !player.isOnline()) {
 			remove();
 			return;
 		}
 		player.setFallDistance(0);
 		player.setSprinting(false);
-		if (Methods.rand.nextInt(4) == 0) {
-			Methods.playAirbendingSound(player.getLocation());
+		if (GeneralMethods.rand.nextInt(4) == 0) {
+			AirMethods.playAirbendingSound(player.getLocation());
 		}
 		Block block = getGround();
 		if (block != null) {
@@ -93,7 +94,7 @@ public class AirSpout {
 		Block standingblock = player.getLocation().getBlock();
 		for (int i = 0; i <= height + 5; i++) {
 			Block block = standingblock.getRelative(BlockFace.DOWN, i);
-			if (Methods.isSolid(block) || block.isLiquid()) {
+			if (GeneralMethods.isSolid(block) || block.isLiquid()) {
 				return block;
 			}
 		}
@@ -128,7 +129,7 @@ public class AirSpout {
 				Location effectloc2 = new Location(location.getWorld(),
 						location.getX(), block.getY() + i, location.getZ());
 
-				Methods.playAirbendingParticles(effectloc2, 15);
+				AirMethods.playAirbendingParticles(effectloc2, 15);
 //				location.getWorld().playEffect(effectloc2, Effect.SMOKE,
 //						(int) directions[index], (int) height + 5);
 
@@ -167,7 +168,7 @@ public class AirSpout {
 
 				double distance = Math.sqrt(dx * dx + dz * dz);
 
-				if (distance <= radius && dy > 0 && dy < height){
+				if (distance <= radius && dy > 0 && dy < HEIGHT){
 					instances.get(player).remove();
 					removed = true;
 				}
@@ -185,6 +186,18 @@ public class AirSpout {
 		for (Player player : instances.keySet()) {
 			instances.get(player).remove();
 		}
+	}
+
+	public Player getPlayer() {
+		return player;
+	}
+
+	public double getHeight() {
+		return height;
+	}
+
+	public void setHeight(double height) {
+		this.height = height;
 	}
 
 }

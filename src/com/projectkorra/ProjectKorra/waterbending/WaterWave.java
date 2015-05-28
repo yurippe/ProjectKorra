@@ -2,6 +2,7 @@ package com.projectkorra.ProjectKorra.waterbending;
 
 import java.util.ArrayList;
 import java.util.Enumeration;
+import java.util.HashSet;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.bukkit.Location;
@@ -14,7 +15,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
 
-import com.projectkorra.ProjectKorra.Methods;
+import com.projectkorra.ProjectKorra.GeneralMethods;
 import com.projectkorra.ProjectKorra.ProjectKorra;
 import com.projectkorra.ProjectKorra.TempBlock;
 import com.projectkorra.ProjectKorra.Ability.AvatarState;
@@ -56,6 +57,12 @@ public class WaterWave {
 	private boolean iceWave = false;
 	private int progressCounter = 0;
 	private AnimateState anim;
+	private double range = RANGE;
+	private double speed = MAX_SPEED;
+	private double chargeTime = CHARGE_TIME;
+	private double flightTime = FLIGHT_TIME;
+	private double waveRadius = WAVE_RADIUS;
+	private double damage = ICE_WAVE_DAMAGE;
 	private ConcurrentHashMap<Block, TempBlock> affectedBlocks = new ConcurrentHashMap<Block, TempBlock>();
 	private ArrayList<Entity> affectedEntities = new ArrayList<Entity>();
 	private ArrayList<BukkitRunnable> tasks = new ArrayList<BukkitRunnable>();
@@ -80,12 +87,12 @@ public class WaterWave {
 			return;
 		}
 		if (type != AbilityType.RELEASE) {
-			if (!Methods.canBend(player.getName(), "WaterSpout")
+			if (!GeneralMethods.canBend(player.getName(), "WaterSpout")
 					|| !player.hasPermission("bending.ability.WaterSpout.Wave")) {
 				remove();
 				return;
 			}
-			String ability = Methods.getBoundAbility(player);
+			String ability = GeneralMethods.getBoundAbility(player);
 			if (ability == null || !ability.equalsIgnoreCase("WaterSpout")) {
 				remove();
 				return;
@@ -97,22 +104,22 @@ public class WaterWave {
 				removeType(player, AbilityType.CLICK);
 				instances.add(this);
 
-				Block block = Methods.getWaterSourceBlock(player, RANGE,
-						Methods.canPlantbend(player));
+				Block block = WaterMethods.getWaterSourceBlock(player, range,
+						WaterMethods.canPlantbend(player));
 				if (block == null) {
 					remove();
 					return;
 				}
 				Block blockAbove = block.getRelative(BlockFace.UP);
 				if (blockAbove.getType() != Material.AIR
-						&& !Methods.isWaterbendable(blockAbove, player)) {
+						&& !WaterMethods.isWaterbendable(blockAbove, player)) {
 					remove();
 					return;
 				}
 				origin = block.getLocation();
 
-				if (!Methods.isWaterbendable(block, player)
-						|| Methods.isRegionProtectedFromBuild(player,
+				if (!WaterMethods.isWaterbendable(block, player)
+						|| GeneralMethods.isRegionProtectedFromBuild(player,
 								"WaterSpout", origin)) {
 					remove();
 					return;
@@ -125,14 +132,14 @@ public class WaterWave {
 					return;
 				}
 			}
-			if (player.getLocation().distance(origin) > RANGE) {
+			if (player.getLocation().distance(origin) > range) {
 				remove();
 				return;
 			} else if (player.isSneaking()) {
 				new WaterWave(player, AbilityType.SHIFT);
 				return;
 			}
-			Methods.playFocusWaterEffect(origin.getBlock());
+			WaterMethods.playFocusWaterEffect(origin.getBlock());
 		} else if (type == AbilityType.SHIFT) {
 			if (direction == null) {
 				direction = player.getEyeLocation().getDirection();
@@ -150,14 +157,14 @@ public class WaterWave {
 						.get(0);
 				origin = clickSpear.origin.clone();
 				currentLoc = origin.clone();
-				if (Methods.isPlant(origin.getBlock()))
+				if (WaterMethods.isPlant(origin.getBlock()))
 					new Plantbending(origin.getBlock());
 
 			}
 
 			removeType(player, AbilityType.CLICK);
 			if (!player.isSneaking()) {
-				if (System.currentTimeMillis() - time > CHARGE_TIME) {
+				if (System.currentTimeMillis() - time > chargeTime) {
 					WaterWave wwave = new WaterWave(player, AbilityType.RELEASE);
 					wwave.anim = AnimateState.SHRINK;
 					wwave.direction = direction;
@@ -171,8 +178,8 @@ public class WaterWave {
 				revertBlocks();
 				currentLoc.add(0, animSpeed, 0);
 				Block block = currentLoc.getBlock();
-				if (!(Methods.isWaterbendable(block, player) || block.getType() == Material.AIR)
-						|| Methods.isRegionProtectedFromBuild(player,
+				if (!(WaterMethods.isWaterbendable(block, player) || block.getType() == Material.AIR)
+						|| GeneralMethods.isRegionProtectedFromBuild(player,
 								"WaterSpout", block.getLocation())) {
 					remove();
 					return;
@@ -182,14 +189,14 @@ public class WaterWave {
 					anim = AnimateState.TOWARDPLAYER;
 			} else if (anim == AnimateState.TOWARDPLAYER) {
 				revertBlocks();
-				Location eyeLoc = player.getTargetBlock(null, 2).getLocation();
+				Location eyeLoc = player.getTargetBlock((HashSet<Material>) null, 2).getLocation();
 				eyeLoc.setY(player.getEyeLocation().getY());
-				Vector vec = Methods.getDirection(currentLoc, eyeLoc);
+				Vector vec = GeneralMethods.getDirection(currentLoc, eyeLoc);
 				currentLoc.add(vec.normalize().multiply(animSpeed));
 
 				Block block = currentLoc.getBlock();
-				if (!(Methods.isWaterbendable(block, player) || block.getType() == Material.AIR)
-						|| Methods.isRegionProtectedFromBuild(player,
+				if (!(WaterMethods.isWaterbendable(block, player) || block.getType() == Material.AIR)
+						|| GeneralMethods.isRegionProtectedFromBuild(player,
 								"WaterSpout", block.getLocation())) {
 					remove();
 					return;
@@ -216,29 +223,29 @@ public class WaterWave {
 					anim = null;
 				}
 			} else {
-				if ((System.currentTimeMillis() - time > FLIGHT_TIME && !AvatarState
+				if ((System.currentTimeMillis() - time > flightTime && !AvatarState
 						.isAvatarState(player)) || player.isSneaking()) {
 					remove();
 					return;
 				}
 				player.setFallDistance(0f);
-				double currentSpeed = MAX_SPEED
-						- (MAX_SPEED
-								* (double) (System.currentTimeMillis() - time) / (double) FLIGHT_TIME);
-				double nightSpeed = Methods.waterbendingNightAugment(
+				double currentSpeed = speed
+						- (speed
+								* (double) (System.currentTimeMillis() - time) / (double) flightTime);
+				double nightSpeed = WaterMethods.waterbendingNightAugment(
 						currentSpeed * 0.9, player.getWorld());
 				currentSpeed = nightSpeed > currentSpeed ? nightSpeed
 						: currentSpeed;
 				if (AvatarState.isAvatarState(player))
-					currentSpeed = Methods.waterbendingNightAugment(MAX_SPEED,
+					currentSpeed = WaterMethods.waterbendingNightAugment(speed,
 							player.getWorld());
 
 				player.setVelocity(player.getEyeLocation().getDirection()
 						.normalize().multiply(currentSpeed));
-				for (Block block : Methods.getBlocksAroundPoint(player
-						.getLocation().add(0, -1, 0), WAVE_RADIUS))
+				for (Block block : GeneralMethods.getBlocksAroundPoint(player
+						.getLocation().add(0, -1, 0), waveRadius))
 					if (block.getType() == Material.AIR
-							&& !Methods.isRegionProtectedFromBuild(player,
+							&& !GeneralMethods.isRegionProtectedFromBuild(player,
 									"WaterSpout", block.getLocation())) {
 						if (iceWave)
 							createBlockDelay(block, Material.ICE, (byte) 0, 2L);
@@ -249,17 +256,17 @@ public class WaterWave {
 				revertBlocksDelay(20L);
 
 				if (iceWave && progressCounter % 3 == 0) {
-					for (Entity entity : Methods.getEntitiesAroundPoint(player
-							.getLocation().add(0, -1, 0), WAVE_RADIUS * 1.5)) {
+					for (Entity entity : GeneralMethods.getEntitiesAroundPoint(player
+							.getLocation().add(0, -1, 0), waveRadius * 1.5)) {
 						if (entity != this.player
 								&& entity instanceof LivingEntity
 								&& !affectedEntities.contains(entity)) {
 							affectedEntities.add(entity);
-							final double aug = Methods
+							final double aug = WaterMethods
 									.getWaterbendingNightAugment(player
 											.getWorld());
-							Methods.damageEntity(player, entity, aug
-									* ICE_WAVE_DAMAGE);
+							GeneralMethods.damageEntity(player, entity, aug
+									* damage);
 							final Player fplayer = this.player;
 							final Entity fent = entity;
 							new BukkitRunnable() {
@@ -274,26 +281,18 @@ public class WaterWave {
 		}
 	}
 
-	public void setIceWave(boolean b) {
-		this.iceWave = b;
-	}
-	
-	public boolean isIceWave() {
-		return this.iceWave;
-	}
-
 	public void drawCircle(double theta, double increment) {
 		double rotateSpeed = 45;
 		revertBlocks();
-		direction = Methods.rotateXZ(direction, rotateSpeed);
+		direction = GeneralMethods.rotateXZ(direction, rotateSpeed);
 		for (double i = 0; i < theta; i += increment) {
-			Vector dir = Methods.rotateXZ(direction, i - theta / 2).normalize()
+			Vector dir = GeneralMethods.rotateXZ(direction, i - theta / 2).normalize()
 					.multiply(radius);
 			dir.setY(0);
 			Block block = player.getEyeLocation().add(dir).getBlock();
 			currentLoc = block.getLocation();
 			if (block.getType() == Material.AIR
-					&& !Methods.isRegionProtectedFromBuild(player,
+					&& !GeneralMethods.isRegionProtectedFromBuild(player,
 							"WaterSpout", block.getLocation()))
 				createBlock(block, Material.STATIONARY_WATER, (byte) 8);
 		}
@@ -362,7 +361,7 @@ public class WaterWave {
 
 					if (block.getType() == Material.AIR
 							|| block.getType() == Material.ICE
-							|| Methods.isWaterbendable(block, player)) {
+							|| WaterMethods.isWaterbendable(block, player)) {
 
 						if (!frozenBlocks.containsKey(block)) {
 							TempBlock tblock = new TempBlock(block,
@@ -433,5 +432,74 @@ public class WaterWave {
 			frozenBlocks.get(block).revertBlock();
 			frozenBlocks.remove(block);
 		}
+	}
+
+	public Player getPlayer() {
+		return player;
+	}
+
+	public double getRadius() {
+		return radius;
+	}
+
+	public void setRadius(double radius) {
+		this.radius = radius;
+	}
+
+	public double getRange() {
+		return range;
+	}
+
+	public void setRange(double range) {
+		this.range = range;
+	}
+
+	public double getSpeed() {
+		return speed;
+	}
+
+	public void setSpeed(double speed) {
+		this.speed = speed;
+	}
+
+	public double getChargeTime() {
+		return chargeTime;
+	}
+
+	public void setChargeTime(double chargeTime) {
+		this.chargeTime = chargeTime;
+	}
+
+	public double getFlightTime() {
+		return flightTime;
+	}
+
+	public void setFlightTime(double flightTime) {
+		this.flightTime = flightTime;
+	}
+
+	public double getWaveRadius() {
+		return waveRadius;
+	}
+
+	public void setWaveRadius(double waveRadius) {
+		this.waveRadius = waveRadius;
+	}
+
+	public double getDamage() {
+		return damage;
+	}
+
+	public void setDamage(double damage) {
+		this.damage = damage;
+	}
+	
+
+	public void setIceWave(boolean b) {
+		this.iceWave = b;
+	}
+	
+	public boolean isIceWave() {
+		return this.iceWave;
 	}
 }

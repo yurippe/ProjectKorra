@@ -12,9 +12,11 @@ import org.bukkit.entity.Player;
 import org.bukkit.entity.TNTPrimed;
 import org.bukkit.util.Vector;
 
-import com.projectkorra.ProjectKorra.Methods;
+import com.projectkorra.ProjectKorra.GeneralMethods;
 import com.projectkorra.ProjectKorra.ProjectKorra;
 import com.projectkorra.ProjectKorra.Ability.AvatarState;
+import com.projectkorra.ProjectKorra.Utilities.ParticleEffect;
+import com.projectkorra.ProjectKorra.airbending.AirMethods;
 
 public class Fireball {
 
@@ -35,6 +37,7 @@ public class Fireball {
 	private double maxdamage = MAX_DAMAGE;
 	private double range = RANGE;
 	private double explosionradius = DAMAGE_RADIUS;
+	private double power = POWER;
 	private double innerradius = explosionradius / 2;
 	private long starttime;
 	private long time;
@@ -43,7 +46,7 @@ public class Fireball {
 	private boolean launched = false;
 	private Player player;
 	private Location origin;
-	private Location location;
+	public Location location;
 	private Vector direction;
 	private TNTPrimed explosion = null;
 
@@ -51,14 +54,14 @@ public class Fireball {
 		this.player = player;
 		time = System.currentTimeMillis();
 		starttime = time;
-		if (Methods.isDay(player.getWorld())) {
+		if (FireMethods.isDay(player.getWorld())) {
 			chargetime = (long) (chargetime / ProjectKorra.plugin.getConfig().getDouble("Properties.Fire.DayFactor"));
 		}
 		if (AvatarState.isAvatarState(player)) {
 			chargetime = 0;
 			maxdamage = AvatarState.getValue(maxdamage);
 		}
-		range = Methods.getFirebendingDayAugment(range, player.getWorld());
+		range = FireMethods.getFirebendingDayAugment(range, player.getWorld());
 		if (!player.getEyeLocation().getBlock().isLiquid()) {
 			id = ID;
 			instances.put(id, this);
@@ -70,17 +73,17 @@ public class Fireball {
 	}
 
 	private void progress() {
-		if (Methods.getBoundAbility(player) == null) {
+		if (GeneralMethods.getBoundAbility(player) == null) {
 			remove();
 			return;
 		}
 		
-		if (!Methods.canBend(player.getName(), "FireBlast") && !launched) {
+		if (!GeneralMethods.canBend(player.getName(), "FireBlast") && !launched) {
 			remove();
 			return;
 		}
 		
-		if (!Methods.getBoundAbility(player).equalsIgnoreCase("FireBlast") && !launched) {
+		if (!GeneralMethods.getBoundAbility(player).equalsIgnoreCase("FireBlast") && !launched) {
 			remove();
 			return;
 		}
@@ -104,7 +107,7 @@ public class Fireball {
 
 		if (System.currentTimeMillis() > time + interval) {
 			if (launched) {
-				if (Methods.isRegionProtectedFromBuild(player, "Blaze",	location)) {
+				if (GeneralMethods.isRegionProtectedFromBuild(player, "Blaze",	location)) {
 					remove();
 					return;
 				}
@@ -125,7 +128,7 @@ public class Fireball {
 				return;
 			}
 
-			if (Methods.isSolid(location.getBlock())) {
+			if (GeneralMethods.isSolid(location.getBlock())) {
 				explode();
 				return;
 			} else if (location.getBlock().isLiquid()) {
@@ -156,26 +159,27 @@ public class Fireball {
 		if (distance > explosionradius)
 			return;
 		if (distance < innerradius) {
-			Methods.damageEntity(player, entity, maxdamage);
+			GeneralMethods.damageEntity(player, entity, maxdamage);
 			return;
 		}
 		double slope = -(maxdamage * .5) / (explosionradius - innerradius);
 		double damage = slope * (distance - innerradius) + maxdamage;
 		// Methods.verbose(damage);
-		Methods.damageEntity(player, entity, damage);
-		Methods.breakBreathbendingHold(entity);
+		GeneralMethods.damageEntity(player, entity, damage);
+		AirMethods.breakBreathbendingHold(entity);
 	}
 
 	private void fireball() {
-		for (Block block : Methods.getBlocksAroundPoint(location, radius)) {
-			block.getWorld().playEffect(block.getLocation(), Effect.MOBSPAWNER_FLAMES, 0, 20);
-			if (Methods.rand.nextInt(4) == 0) {
-				Methods.playFirebendingSound(location);
+		for (Block block : GeneralMethods.getBlocksAroundPoint(location, radius)) {
+			ParticleEffect.FLAME.display(block.getLocation(), 0.6F, 0.6F, 0.6F, 0, 17);
+			ParticleEffect.SMOKE.display(block.getLocation(), 0.6F, 0.6F, 0.6F, 0, 17);
+			if (GeneralMethods.rand.nextInt(4) == 0) {
+				FireMethods.playFirebendingSound(location);
 			}
 			
 		}
 
-		for (Entity entity : Methods.getEntitiesAroundPoint(location, 2 * radius)) {
+		for (Entity entity : GeneralMethods.getEntitiesAroundPoint(location, 2 * radius)) {
 			if (entity.getEntityId() == player.getEntityId())
 				continue;
 			entity.setFireTicks(120);
@@ -196,14 +200,14 @@ public class Fireball {
 		return false;
 	}
 
-	private void explode() {
+	public void explode() {
 		// List<Block> blocks = Methods.getBlocksAroundPoint(location, 3);
 		// List<Block> blocks2 = new ArrayList<Block>();
 
 		// Methods.verbose("Fireball Explode!");
 		boolean explode = true;
-		for (Block block : Methods.getBlocksAroundPoint(location, 3)) {
-			if (Methods.isRegionProtectedFromBuild(player, "FireBlast",	block.getLocation())) {
+		for (Block block : GeneralMethods.getBlocksAroundPoint(location, 3)) {
+			if (GeneralMethods.isRegionProtectedFromBuild(player, "FireBlast",	block.getLocation())) {
 				explode = false;
 				break;
 			}
@@ -211,10 +215,10 @@ public class Fireball {
 		if (explode) {
 			explosion = player.getWorld().spawn(location, TNTPrimed.class);
 			explosion.setFuseTicks(0);
-			float yield = (float) POWER;
+			float yield = (float) power;
 			if (!AvatarState.isAvatarState(player)) {
-				if (Methods.isDay(player.getWorld())) {
-					Methods.getFirebendingDayAugment(yield, player.getWorld());
+				if (FireMethods.isDay(player.getWorld())) {
+					FireMethods.getFirebendingDayAugment(yield, player.getWorld());
 				} else {
 					yield *= 1.;
 				}
@@ -246,7 +250,7 @@ public class Fireball {
 	}
 
 	private void ignite(Location location) {
-		for (Block block : Methods.getBlocksAroundPoint(location, FireBlast.affectingradius)) {
+		for (Block block : GeneralMethods.getBlocksAroundPoint(location, FireBlast.AFFECTING_RADIUS)) {
 			if (FireStream.isIgnitable(player, block)) {
 				block.setType(Material.FIRE);
 				if (FireBlast.dissipate) {
@@ -303,5 +307,57 @@ public class Fireball {
 
 		return broke;
 
+	}
+
+	public double getMaxdamage() {
+		return maxdamage;
+	}
+
+	public void setMaxdamage(double maxdamage) {
+		this.maxdamage = maxdamage;
+	}
+
+	public double getRange() {
+		return range;
+	}
+
+	public void setRange(double range) {
+		this.range = range;
+	}
+
+	public double getExplosionradius() {
+		return explosionradius;
+	}
+
+	public void setExplosionradius(double explosionradius) {
+		this.explosionradius = explosionradius;
+	}
+
+	public double getPower() {
+		return power;
+	}
+
+	public void setPower(double power) {
+		this.power = power;
+	}
+
+	public double getInnerradius() {
+		return innerradius;
+	}
+
+	public void setInnerradius(double innerradius) {
+		this.innerradius = innerradius;
+	}
+
+	public long getChargetime() {
+		return chargetime;
+	}
+
+	public void setChargetime(long chargetime) {
+		this.chargetime = chargetime;
+	}
+
+	public Player getPlayer() {
+		return player;
 	}
 }

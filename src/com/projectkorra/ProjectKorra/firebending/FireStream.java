@@ -11,9 +11,9 @@ import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
 
-import com.projectkorra.ProjectKorra.Methods;
 import com.projectkorra.ProjectKorra.ProjectKorra;
 import com.projectkorra.ProjectKorra.waterbending.Plantbending;
+import com.projectkorra.ProjectKorra.waterbending.WaterMethods;
 
 public class FireStream {
 
@@ -41,7 +41,7 @@ public class FireStream {
 	private double range;
 
 	public FireStream(Location location, Vector direction, Player player, int range) {
-		this.range = Methods.getFirebendingDayAugment(range, player.getWorld());
+		this.range = FireMethods.getFirebendingDayAugment(range, player.getWorld());
 		this.player = player;
 		origin = location.clone();
 		this.location = origin.clone();
@@ -94,7 +94,7 @@ public class FireStream {
 	}
 
 	private void ignite(Block block) {
-		if (Methods.isPlant(block)) {
+		if (WaterMethods.isPlant(block)) {
 			new Plantbending(block);
 		}
 
@@ -105,7 +105,7 @@ public class FireStream {
 
 	public static boolean isIgnitable(Player player, Block block) {
 
-		Material[] overwriteable = { Material.SAPLING, Material.LONG_GRASS,
+		Material[] overwriteable = { Material.SAPLING, Material.LONG_GRASS, Material.THIN_GLASS,
 				Material.DEAD_BUSH, Material.YELLOW_FLOWER, Material.RED_ROSE,
 				Material.BROWN_MUSHROOM, Material.RED_MUSHROOM, Material.FIRE,
 				Material.SNOW, Material.TORCH };
@@ -129,7 +129,7 @@ public class FireStream {
 				Material.OBSIDIAN, Material.REDSTONE_ORE, Material.SAND,
 				Material.SANDSTONE, Material.SMOOTH_BRICK, Material.STONE,
 				Material.SOUL_SAND, Material.WOOD, // Material.SNOW_BLOCK, 
-				Material.WOOL, Material.LEAVES, Material.MELON_BLOCK,
+				Material.WOOL, Material.LEAVES, Material.LEAVES_2, Material.MELON_BLOCK,
 				Material.PUMPKIN, Material.JACK_O_LANTERN, Material.NOTE_BLOCK,
 				Material.GLOWSTONE, Material.IRON_BLOCK, Material.DISPENSER,
 				Material.SPONGE, Material.IRON_ORE, Material.GOLD_ORE,
@@ -199,6 +199,18 @@ public class FireStream {
 					instances.remove(id);
 		}
 
+	}
+
+	public Player getPlayer() {
+		return player;
+	}
+
+	public double getRange() {
+		return range;
+	}
+
+	public void setRange(double range) {
+		this.range = range;
 	}
 
 }

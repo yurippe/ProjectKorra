@@ -6,15 +6,15 @@ import org.bukkit.entity.Player;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 
-import com.projectkorra.ProjectKorra.Methods;
+import com.projectkorra.ProjectKorra.GeneralMethods;
 import com.projectkorra.ProjectKorra.ProjectKorra;
 import com.projectkorra.ProjectKorra.Ability.StockAbilities;
 import com.projectkorra.ProjectKorra.waterbending.Bloodbending;
 
 public class WarriorStance {
 	
-	public static int strength = ProjectKorra.plugin.getConfig().getInt("Abilities.Chi.WarriorStance.Strength") - 1;
-	public static int resistance = ProjectKorra.plugin.getConfig().getInt("Abilities.Chi.WarriorStance.Resistance");
+	public int strength = ProjectKorra.plugin.getConfig().getInt("Abilities.Chi.WarriorStance.Strength") - 1;
+	public int resistance = ProjectKorra.plugin.getConfig().getInt("Abilities.Chi.WarriorStance.Resistance");
 	
 	private Player player;
 	public static ConcurrentHashMap<Player, WarriorStance> instances = new ConcurrentHashMap<Player, WarriorStance>();
@@ -38,7 +38,7 @@ public class WarriorStance {
 			remove();
 			return;
 		}
-		if (!Methods.canBend(player.getName(), StockAbilities.WarriorStance.toString())) {
+		if (!GeneralMethods.canBend(player.getName(), StockAbilities.WarriorStance.toString())) {
 			remove();
 			return;
 		}
@@ -75,4 +75,23 @@ public class WarriorStance {
 		instances.remove(player);
 	}
 
+	public int getStrength() {
+		return strength;
+	}
+
+	public void setStrength(int strength) {
+		this.strength = strength;
+	}
+
+	public int getResistance() {
+		return resistance;
+	}
+
+	public void setResistance(int resistance) {
+		this.resistance = resistance;
+	}
+
+	public Player getPlayer() {
+		return player;
+	}
 }

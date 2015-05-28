@@ -8,7 +8,7 @@ import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 
-import com.projectkorra.ProjectKorra.Methods;
+import com.projectkorra.ProjectKorra.GeneralMethods;
 import com.projectkorra.ProjectKorra.ProjectKorra;
 import com.projectkorra.ProjectKorra.TempBlock;
 import com.projectkorra.ProjectKorra.Ability.AvatarState;
@@ -20,22 +20,24 @@ public class FreezeMelt {
 	public static final int defaultrange = ProjectKorra.plugin.getConfig().getInt("Abilities.Water.PhaseChange.Range");
 	public static final int defaultradius = ProjectKorra.plugin.getConfig().getInt("Abilities.Water.PhaseChange.Radius");
 	
-	public static final int OVERLOADING_LIMIT = 1000;
+	public static final int OVERLOADING_LIMIT = 200;
 	public static boolean overloading = false;
 	public static int overloadCounter = 0;
 	
 
 	public FreezeMelt(Player player) {
-
-		int range = (int) Methods.waterbendingNightAugment(defaultrange, player.getWorld());
-		int radius = (int) Methods.waterbendingNightAugment(defaultradius, player.getWorld());
+		if(!WaterMethods.canIcebend(player))
+			return;
+		
+		int range = (int) WaterMethods.waterbendingNightAugment(defaultrange, player.getWorld());
+		int radius = (int) WaterMethods.waterbendingNightAugment(defaultradius, player.getWorld());
 		if (AvatarState.isAvatarState(player)) {
 			range = AvatarState.getValue(range);
 			// radius = AvatarState.getValue(radius);
 		}
 
-		Location location = Methods.getTargetedLocation(player, range);
-		for (Block block : Methods.getBlocksAroundPoint(location, radius)) {
+		Location location = GeneralMethods.getTargetedLocation(player, range);
+		for (Block block : GeneralMethods.getBlocksAroundPoint(location, radius)) {
 			if (isFreezable(player, block)) {
 				freeze(player, block);
 			}
@@ -44,7 +46,7 @@ public class FreezeMelt {
 	}
 
 	private static boolean isFreezable(Player player, Block block) {
-		if (Methods.isRegionProtectedFromBuild(player, "PhaseChange", block.getLocation()))
+		if (GeneralMethods.isRegionProtectedFromBuild(player, "PhaseChange", block.getLocation()))
 			return false;
 		if (block.getType() == Material.WATER || block.getType() == Material.STATIONARY_WATER)
 			if (WaterManipulation.canPhysicsChange(block) && !TempBlock.isTempBlock(block))
@@ -52,17 +54,19 @@ public class FreezeMelt {
 		return false;
 	}
 
+	@SuppressWarnings("deprecation")
 	static void freeze(Player player, Block block) {
-		if (Methods.isRegionProtectedFromBuild(player, "PhaseChange", block.getLocation()))
+		if (GeneralMethods.isRegionProtectedFromBuild(player, "PhaseChange", block.getLocation()))
 			return;
 		if (TempBlock.isTempBlock(block))
 			return;
 		byte data = block.getData();
 		block.setType(Material.ICE);
-		Methods.playIcebendingSound(block.getLocation());
+		WaterMethods.playIcebendingSound(block.getLocation());
 		frozenblocks.put(block, data);
 	}
 
+	@SuppressWarnings("deprecation")
 	public static void thaw(Block block) {
 		if (frozenblocks.containsKey(block)) {
 			byte data = frozenblocks.get(block);
@@ -107,15 +111,15 @@ public class FreezeMelt {
 	public static boolean canThaw(Block block) {
 		if (frozenblocks.containsKey(block)) {
 			for (Player player : block.getWorld().getPlayers()) {
-				if (Methods.getBoundAbility(player) == null) {
+				if (GeneralMethods.getBoundAbility(player) == null) {
 					return true;
 				}
-				if (Methods.getBoundAbility(player).equalsIgnoreCase("OctopusForm")) {
-					if (block.getLocation().distance(player.getLocation()) <= OctopusForm.radius + 2)
+				if (GeneralMethods.getBoundAbility(player).equalsIgnoreCase("OctopusForm")) {
+					if (block.getLocation().distance(player.getLocation()) <= OctopusForm.RADIUS + 2)
 						return false;
 				}
-				if (Methods.canBend(player.getName(), "PhaseChange")) {
-					double range = Methods.waterbendingNightAugment(defaultrange, player.getWorld());
+				if (GeneralMethods.canBend(player.getName(), "PhaseChange")) {
+					double range = WaterMethods.waterbendingNightAugment(defaultrange, player.getWorld());
 					if (AvatarState.isAvatarState(player)) {
 						range = AvatarState.getValue(range);
 					}
@@ -129,6 +133,7 @@ public class FreezeMelt {
 		return true;
 	}
 
+	@SuppressWarnings("deprecation")
 	private static void thawAll() {
 		for (Block block : frozenblocks.keySet()) {
 			if (block.getType() == Material.ICE) {

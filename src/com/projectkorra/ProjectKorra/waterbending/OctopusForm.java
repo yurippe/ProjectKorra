@@ -12,20 +12,23 @@ import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
 
-import com.projectkorra.ProjectKorra.Methods;
+import com.projectkorra.ProjectKorra.GeneralMethods;
 import com.projectkorra.ProjectKorra.ProjectKorra;
 import com.projectkorra.ProjectKorra.TempBlock;
 import com.projectkorra.ProjectKorra.Ability.AvatarState;
+import com.projectkorra.ProjectKorra.airbending.AirMethods;
+import com.projectkorra.ProjectKorra.earthbending.EarthMethods;
 
 public class OctopusForm {
 
-	static ConcurrentHashMap<Player, OctopusForm> instances = new ConcurrentHashMap<Player, OctopusForm>();
+	public static ConcurrentHashMap<Player, OctopusForm> instances = new ConcurrentHashMap<Player, OctopusForm>();
 
-	private static int range = ProjectKorra.plugin.getConfig().getInt("Abilities.Water.OctopusForm.Range");
-	private static int damage = ProjectKorra.plugin.getConfig().getInt("Abilities.Water.OctopusForm.Damage");
-	private static long interval = ProjectKorra.plugin.getConfig().getLong("Abilities.Water.OctopusForm.FormDelay");
-	private static double knockback = ProjectKorra.plugin.getConfig().getDouble("Abilities.Water.OctopusForm.Knockback");
-	static double radius = ProjectKorra.plugin.getConfig().getDouble("Abilities.Water.OctopusForm.Radius");
+	private static int RANGE = ProjectKorra.plugin.getConfig().getInt("Abilities.Water.OctopusForm.Range");
+	private static double ATTACK_RANGE = ProjectKorra.plugin.getConfig().getInt("Abilities.Water.OctopusForm.AttackRange");
+	private static int DAMAGE = ProjectKorra.plugin.getConfig().getInt("Abilities.Water.OctopusForm.Damage");
+	private static long INTERVAL = ProjectKorra.plugin.getConfig().getLong("Abilities.Water.OctopusForm.FormDelay");
+	private static double KNOCKBACK = ProjectKorra.plugin.getConfig().getDouble("Abilities.Water.OctopusForm.Knockback");
+	static double RADIUS = ProjectKorra.plugin.getConfig().getDouble("Abilities.Water.OctopusForm.Radius");
 	private static final byte full = 0x0;
 
 	private Player player;
@@ -45,6 +48,12 @@ public class OctopusForm {
 	private boolean settingup = false;
 	private boolean forming = false;
 	private boolean formed = false;
+	private int range = RANGE;
+	private double attackRange = ATTACK_RANGE;
+	private int damage = DAMAGE;
+	private long interval = INTERVAL;
+	private double knockback = KNOCKBACK;
+	private double radius = RADIUS;
 
 	public OctopusForm(Player player) {
 		if (instances.containsKey(player)) {
@@ -57,7 +66,7 @@ public class OctopusForm {
 		}
 		this.player = player;
 		time = System.currentTimeMillis();
-		sourceblock = Methods.getWaterSourceBlock(player, range, true);
+		sourceblock = WaterMethods.getWaterSourceBlock(player, range, true);
 		if (sourceblock != null) {
 			sourcelocation = sourceblock.getLocation();
 			sourceselected = true;
@@ -78,14 +87,15 @@ public class OctopusForm {
 		}
 	}
 
+	@SuppressWarnings("deprecation")
 	public static void form(Player player) {
 		if (instances.containsKey(player)) {
 			instances.get(player).form();
 		} else if (WaterReturn.hasWaterBottle(player)) {
 			Location eyeloc = player.getEyeLocation();
 			Block block = eyeloc.add(eyeloc.getDirection().normalize()).getBlock();
-			if (Methods.isTransparentToEarthbending(player, block)
-					&& Methods.isTransparentToEarthbending(player, eyeloc.getBlock())) {
+			if (EarthMethods.isTransparentToEarthbending(player, block)
+					&& EarthMethods.isTransparentToEarthbending(player, eyeloc.getBlock())) {
 				block.setType(Material.WATER);
 				block.setData(full);
 				OctopusForm form = new OctopusForm(player);
@@ -101,10 +111,10 @@ public class OctopusForm {
 
 	private void form() {
 		incrementStep();
-		if (Methods.isPlant(sourceblock)) {
+		if (WaterMethods.isPlant(sourceblock)) {
 			new Plantbending(sourceblock);
 			sourceblock.setType(Material.AIR);
-		} else if (!Methods.isAdjacentToThreeOrMoreSources(sourceblock)) {
+		} else if (!GeneralMethods.isAdjacentToThreeOrMoreSources(sourceblock)) {
 			sourceblock.setType(Material.AIR);
 		}
 		source = new TempBlock(sourceblock, Material.STATIONARY_WATER, (byte) 8);
@@ -123,21 +133,21 @@ public class OctopusForm {
 	}
 
 	private void affect(Location location) {
-		for (Entity entity : Methods.getEntitiesAroundPoint(location, 2.5)) {
+		for (Entity entity : GeneralMethods.getEntitiesAroundPoint(location, attackRange)) {
 			if (entity.getEntityId() == player.getEntityId())
 				continue;
-			if (Methods.isRegionProtectedFromBuild(player, "OctopusForm", entity.getLocation()))
+			if (GeneralMethods.isRegionProtectedFromBuild(player, "OctopusForm", entity.getLocation()))
 				continue;
 			// if (Torrent.canThaw(entity.getLocation().getBlock())
 			// || Wave.canThaw(entity.getLocation().getBlock()))
 			// continue;
-			if (Methods.isObstructed(location, entity.getLocation()))
+			if (GeneralMethods.isObstructed(location, entity.getLocation()))
 				continue;
 			double knock = AvatarState.isAvatarState(player) ? AvatarState.getValue(knockback) : knockback;
-			entity.setVelocity(Methods.getDirection(player.getLocation(), location).normalize().multiply(knock));
+			entity.setVelocity(GeneralMethods.getDirection(player.getLocation(), location).normalize().multiply(knock));
 			if (entity instanceof LivingEntity)
-				Methods.damageEntity(player, entity, damage);
-				Methods.breakBreathbendingHold(entity);
+				GeneralMethods.damageEntity(player, entity, damage);
+				AirMethods.breakBreathbendingHold(entity);
 		}
 	}
 
@@ -149,19 +159,19 @@ public class OctopusForm {
 	}
 
 	private void progress() {
-		if (!Methods.canBend(player.getName(), "OctopusForm")) {
+		if (!GeneralMethods.canBend(player.getName(), "OctopusForm")) {
 			remove();
 			returnWater();
 			return;
 		}
 		
-		if (Methods.getBoundAbility(player) == null) {
+		if (GeneralMethods.getBoundAbility(player) == null) {
 			remove();
 			returnWater();
 			return;
 		}
 		
-		if ((!player.isSneaking() && !sourceselected) || !Methods.getBoundAbility(player).equalsIgnoreCase("OctopusForm")) {
+		if ((!player.isSneaking() && !sourceselected) || !GeneralMethods.getBoundAbility(player).equalsIgnoreCase("OctopusForm")) {
 			remove();
 			returnWater();
 			return;
@@ -183,14 +193,14 @@ public class OctopusForm {
 			Location location = player.getLocation();
 
 			if (sourceselected) {
-				Methods.playFocusWaterEffect(sourceblock);
+				WaterMethods.playFocusWaterEffect(sourceblock);
 			} else if (settingup) {
 				if (sourceblock.getY() < location.getBlockY()) {
 					source.revertBlock();
 					source = null;
 					Block newblock = sourceblock.getRelative(BlockFace.UP);
 					sourcelocation = newblock.getLocation();
-					if (!Methods.isSolid(newblock)) {
+					if (!GeneralMethods.isSolid(newblock)) {
 						source = new TempBlock(newblock, Material.STATIONARY_WATER, (byte) 8);
 						sourceblock = newblock;
 					} else {
@@ -202,7 +212,7 @@ public class OctopusForm {
 					source = null;
 					Block newblock = sourceblock.getRelative(BlockFace.DOWN);
 					sourcelocation = newblock.getLocation();
-					if (!Methods.isSolid(newblock)) {
+					if (!GeneralMethods.isSolid(newblock)) {
 						source = new TempBlock(newblock, Material.STATIONARY_WATER, (byte) 8);
 						sourceblock = newblock;
 					} else {
@@ -210,23 +220,23 @@ public class OctopusForm {
 						returnWater();
 					}
 				} else if (sourcelocation.distance(location) > radius) {
-					Vector vector = Methods.getDirection(sourcelocation, location.getBlock().getLocation()).normalize();
+					Vector vector = GeneralMethods.getDirection(sourcelocation, location.getBlock().getLocation()).normalize();
 					sourcelocation.add(vector);
 					Block newblock = sourcelocation.getBlock();
 					if (!newblock.equals(sourceblock)) {
 						source.revertBlock();
 						source = null;
-						if (!Methods.isSolid(newblock)) {
+						if (!GeneralMethods.isSolid(newblock)) {
 							source = new TempBlock(newblock, Material.STATIONARY_WATER, (byte) 8);
 							sourceblock = newblock;
 						}
 					}
 				} else {
 					incrementStep();
-					source.revertBlock();
+					if (source != null) source.revertBlock();
 					source = null;
 					Vector vector = new Vector(1, 0, 0);
-					startangle = vector.angle(Methods.getDirection(	sourceblock.getLocation(), location));
+					startangle = vector.angle(GeneralMethods.getDirection(	sourceblock.getLocation(), location));
 					angle = startangle;
 				}
 			} else if (forming) {
@@ -236,16 +246,16 @@ public class OctopusForm {
 				} else {
 					angle += 20;
 				}
-				if (Methods.rand.nextInt(4) == 0) {
-					Methods.playWaterbendingSound(player.getLocation());
+				if (GeneralMethods.rand.nextInt(4) == 0) {
+					WaterMethods.playWaterbendingSound(player.getLocation());
 				}		
 				formOctopus();
 				if (y == 2) {
 					incrementStep();
 				}
 			} else if (formed) {
-				if (Methods.rand.nextInt(7) == 0) {
-					Methods.playWaterbendingSound(player.getLocation());
+				if (GeneralMethods.rand.nextInt(7) == 0) {
+					WaterMethods.playWaterbendingSound(player.getLocation());
 				}		
 				step += 1;
 				if (step % inc == 0)
@@ -305,7 +315,7 @@ public class OctopusForm {
 		if (!blocks.contains(TempBlock.get(base.getBlock())))
 			return;
 
-		Vector direction = Methods.getDirection(player.getLocation(), base);
+		Vector direction = GeneralMethods.getDirection(player.getLocation(), base);
 		direction.setY(0);
 		direction.normalize();
 
@@ -346,7 +356,7 @@ public class OctopusForm {
 
 	private void addWater(Block block) {
 		clearNearbyWater(block);
-		if (Methods.isRegionProtectedFromBuild(player, "OctopusForm", block.getLocation()))
+		if (GeneralMethods.isRegionProtectedFromBuild(player, "OctopusForm", block.getLocation()))
 			return;
 		if (TempBlock.isTempBlock(block)) {
 			TempBlock tblock = TempBlock.get(block);
@@ -355,7 +365,7 @@ public class OctopusForm {
 					tblock.setType(Material.WATER, full);
 				newblocks.add(tblock);
 			}
-		} else if (Methods.isWaterbendable(block, player) || block.getType() == Material.FIRE || block.getType() == Material.AIR) {
+		} else if (WaterMethods.isWaterbendable(block, player) || block.getType() == Material.FIRE || block.getType() == Material.AIR) {
 			newblocks.add(new TempBlock(block, Material.STATIONARY_WATER, (byte) 8));
 		}
 	}
@@ -384,7 +394,7 @@ public class OctopusForm {
 		BlockFace[] faces = { BlockFace.NORTH, BlockFace.SOUTH, BlockFace.EAST,	BlockFace.WEST, BlockFace.DOWN };
 		for (BlockFace face : faces) {
 			Block rel = block.getRelative(face);
-			if (Methods.isWater(rel) && !TempBlock.isTempBlock(rel)) {
+			if (WaterMethods.isWater(rel) && !TempBlock.isTempBlock(rel)) {
 				FreezeMelt.freeze(player, rel);
 				// water.add(new TempBlock(rel, Material.AIR, (byte) 0));
 			}
@@ -450,5 +460,59 @@ public class OctopusForm {
 				+ "Additionally, you can click while channeling to attack things near you, dealing damage and knocking them back. "
 				+ "Releasing shift at any time will dissipate the form.";
 	}
+
+	public Player getPlayer() {
+		return player;
+	}
+
+	public int getRange() {
+		return range;
+	}
+
+	public void setRange(int range) {
+		this.range = range;
+	}
+
+	public int getDamage() {
+		return damage;
+	}
+
+	public void setDamage(int damage) {
+		this.damage = damage;
+	}
+
+	public long getInterval() {
+		return interval;
+	}
+
+	public void setInterval(long interval) {
+		this.interval = interval;
+	}
+
+	public double getKnockback() {
+		return knockback;
+	}
+
+	public void setKnockback(double knockback) {
+		this.knockback = knockback;
+	}
+
+	public double getRadius() {
+		return radius;
+	}
+
+	public void setRadius(double radius) {
+		this.radius = radius;
+	}
+
+	public double getAttackRange() {
+		return attackRange;
+	}
+
+	public void setAttackRange(double attackRange) {
+		this.attackRange = attackRange;
+	}
+	
+	
 
 }

@@ -33,6 +33,7 @@ Properties:
     RespectTowny: true
     RespectPreciousStones: true
     RespectLWC: true
+    CacheBlockTime: 5000
   Air:
     CanBendWithWeapons: false
     Particles: smoke
@@ -153,12 +154,31 @@ Abilities:
       Cooldown: 1500
       ChargeFactor: 3
       MaxChargeTime: 3000
+    Flight:
+      Enabled: true
+      Description: "Jump in the air, crouch (default: shift) and hold with this ability bound and you will glide around in the direction you look. While flying, click to Hover. Click again to disable Hovering."
+      HoverEnabled: true
     Suffocate:
       Enabled: true
       Description: "This ability is one of the most dangerous abilities an Airbender possesses. To use, simply look at an entity and hold shift. The entity will begin taking damage as you extract the air from their lungs. Any bender caught in this sphere will only be able to use basic moves, such as AirSwipe, WaterManipulation, FireBlast, or EarthBlast. An entity can be knocked out of the sphere by certain bending arts, and your attention will be disrupted if you are hit by bending."
+      Range: 15
+      Damage: 2
+      ChargeTime: 1000
+      Cooldown: 0
+      DamageInitialDelay: 2
+      DamageInterval: 1
+      SlowPotency: 1
+      SlowDelay: 0.5
+      SlowInterval: 1.25
+      BlindPotentcy: 30
+      BlindDelay: 2
+      BlindInterval: 1.5
       CanBeUsedOnUndeadMobs: true
-      Range: 5
-      Damage: 0.5
+      RequireConstantAim: true
+      RequireConstantAimRadius: 5
+      AnimationRadius: 2.0
+      AnimationParticleAmount: 2
+      AnimationSpeed: 1.0
     Tornado: 
       Enabled: true
       Description: "To use, simply sneak (default: shift). This will create a swirling vortex at the targeted location. Any creature or object caught in the vortex will be launched up and out in some random direction. If another player gets caught in the vortex, the launching effect is minimal. Tornado can also be used to transport the user. If the user gets caught in his/her own tornado, his/her movements are much more manageable. Provided the user doesn't fall out of the vortex, it will take him to a maximum height and move him in the general direction he/she is looking. Skilled airbenders can scale anything with this ability."
@@ -229,6 +249,7 @@ Abilities:
       Enabled: true
       Description: "This ability allows the waterbender to manipulate a large quantity of water into a form resembling that of an octopus. To use, click to select a water source. Then, hold sneak to channel this ability. While channleing, the water will form itself around you and has a chance to block incoming attacks. Additionally, you can click while channeling to attack things near you, dealing damage and knocking the target back. Releasing shift at any time will dissipate the form."
       Range: 10
+      AttackRange: 2.5
       Damage: 3
       Radius: 3
       FormDelay: 50
@@ -375,6 +396,29 @@ Abilities:
       DownwardFlow: 4
       AllowNaturalFlow: false
       ParticleDensity: 0.33
+    EarthSmash:
+      Enabled: true
+      Description: 'To raise an EarthSmash hold sneak (default: shift) for approximately
+        1.5 seconds, then release while aiming at dirt. To grab the EarthSmash aim
+        at the center and hold sneak, the EarthSmash will follow your mouse. You can
+        shoot the EarthSmash by grabbing onto it and left clicking. To ride the EarthSmash
+        simply hop ontop of it and hold sneak while aiming in the direction that you
+        wish to go. Another way to ride an EarthSmash is to grab it with sneak and
+        then right click it. Use EarthSmash as a defensive shield, a powerful attack,
+        or an advanced means of transportation.'
+      AllowGrab: true
+      AllowShooting: true
+      AllowFlight: true
+      GrabRange: 10
+      ChargeTime: 1200
+      Cooldown: 0
+      ShotRange: 30
+      Damage: 6
+      Knockback: 3.5
+      Knockup: 0.15
+      FlightSpeed: 0.72
+      FlightTimer: 3000
+      RemoveTimer: 30000
     RaiseEarth:
       Enabled: true
       Description: "To use, simply left-click on an earthbendable block. A column of earth will shoot upwards from that location. Anything in the way of the column will be brought up with it, leaving talented benders the ability to trap brainless entities up there. Additionally, simply sneak (default shift) looking at an earthbendable block. A wall of earth will shoot upwards from that location. Anything in the way of the wall will be brought up with it."
@@ -469,11 +513,22 @@ Abilities:
     Lightning:
       Enabled: true
       Description: "Hold sneak while selecting this ability to charge up a lightning strike. once charged, release sneak to discharge the lightning to the targeted location."
-      Distance: 15
-      WaterAreaOfEffect: 15
-      Warmup: 3500
-      MissChance: 10
       Damage: 6
+      Range: 13.0
+      ChargeTime: 3500
+      Cooldown: 0
+      StunChance: 0.2
+      StunDuration: 30.0
+      MaxArcAngle: 30
+      SubArcChance: 0.025
+      ChainArcRange: 6.0
+      ChainArcChance: 0.5
+      MaxChainArcs: 2
+      WaterArcs: 4
+      WaterArcRange: 12.0
+      SelfHitWater: true
+      SelfHitClose: true
+      ArcOnIce: false
     WallOfFire:
       Enabled: true
       Description: "To use this ability, click at a location. A wall of fire will appear at this location, igniting enemies caught in it and blocking projectiles."
